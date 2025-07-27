@@ -17,7 +17,6 @@
 
 use clap::Parser;
 use llvm_parser::parse_module::parse_module;
-use ptx_backend::lower_to_ptx;
 use std::fs::File;
 use std::io::{BufWriter, Write};
 
@@ -38,19 +37,33 @@ fn main() {
         Box::new(std::io::stdout())
     };
 
+    // Emitir encabezado global solo una vez
+    writeln!(output, ".version 7.0").unwrap();
+    writeln!(output, ".target sm_75").unwrap();
+    writeln!(output, ".address_size 64").unwrap();
+    writeln!(output).unwrap();
+
     for func in module.functions {
         writeln!(output, "// Function: {}", func.name).unwrap();
 
-        let mut instrs = Vec::new();
-        for block in func.basic_blocks {
-            // Optional comment per block
+        // Reunir todas las instrucciones de todos los bloques
+        let mut instrs = vec![];
+        for block in &func.basic_blocks {
             writeln!(output, "// Block: {}", block.name).unwrap();
             instrs.extend(block.instrs.iter().map(llvm_parser::convert::lower));
         }
 
-        for line in lower_to_ptx(&instrs) {
-            writeln!(output, "{}", line).unwrap();
-        }
-    }
+        // Emitir declaración de registros y encabezado de función
+        writeln!(output, "{}", ptx_backend::declare_registers(&instrs)).unwrap();
+        writeln!(output, ".entry {} {{", func.name).unwrap();
 
+        // Emitir instrucciones
+        for instr in &instrs {
+            writeln!(output, "{}", ptx_backend::to_ptx(instr)).unwrap();
+        }
+
+        writeln!(output, "}}").unwrap(); // cerrar función
+        writeln!(output).unwrap();
+    }
 }
+

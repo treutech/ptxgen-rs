@@ -1,0 +1,61 @@
+---
+source: crates/ptx_backend/tests/llvm_to_ptx.rs
+expression: actual
+---
+// Function: saxpy
+// Block: %entry
+// Function: saxpy
+.version 7.0
+.target sm_75
+.address_size 64
+
+.reg .f32 %i, %0;
+
+.entry saxpy {
+    // local stack allocation: i
+    st.global.f32 i, 0;
+}
+// Block: %loop
+// Function: saxpy
+.version 7.0
+.target sm_75
+.address_size 64
+
+.reg .f32 %idx, %i;
+.reg .s32 %idx, %n;
+.reg .pred %cmp;
+
+.entry saxpy {
+    ld.global.f32 idx, i;
+    setp.lt.s32 cmp, idx, n;
+}
+// Block: %body
+// Function: saxpy
+.version 7.0
+.target sm_75
+.address_size 64
+
+.reg .f32 %a, %i, %yval, %xval, %x_, %out_, %next, %ax, %y_, %res;
+.reg .s32 %next, %idx, %1;
+
+.entry saxpy {
+    // address calc: x_ = x[idx]
+    // address calc: y_ = y[idx]
+    // address calc: out_ = out[idx]
+    ld.global.f32 xval, x_;
+    ld.global.f32 yval, y_;
+    fmul.f32 ax, a, xval;
+    fadd.f32 res, ax, yval;
+    st.global.f32 out_, res;
+    add.s32 next, idx, 1;
+    st.global.f32 i, next;
+}
+// Block: %exit
+// Function: saxpy
+.version 7.0
+.target sm_75
+.address_size 64
+
+
+.entry saxpy {
+}

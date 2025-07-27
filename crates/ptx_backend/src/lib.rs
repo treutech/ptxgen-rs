@@ -48,7 +48,7 @@ fn emit_header() -> String {
         .join("\n")
 }
 
-fn declare_registers(instrs: &[Instruction]) -> String {
+pub fn declare_registers(instrs: &[Instruction]) -> String {
     let mut f32_regs = HashSet::new();
     let mut s32_regs = HashSet::new();
     let mut pred_regs = HashSet::new();
@@ -87,7 +87,7 @@ fn declare_registers(instrs: &[Instruction]) -> String {
     out.join("\n")
 }
 
-fn to_ptx(instr: &Instruction) -> String {
+pub fn to_ptx(instr: &Instruction) -> String {
     match instr {
         Instruction::FMul { dst, lhs, rhs } => {
             format!(
