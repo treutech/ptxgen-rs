@@ -2,5 +2,10 @@
 name = "ptx_runtime"
 version = "0.1.0"
 edition = "2024"
+license = "Apache-2.0"
+authors = ["Raul Estrada <restrada@treutech.io>"]
+homepage = "https://treutech.io/ptxgen-rs"
+repository = "https://github.com/treutech/ptxgen-rs"
+
 
 [dependencies]
