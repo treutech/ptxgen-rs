@@ -1,5 +1,5 @@
 [package]
-name = "ptx_backend"
+name = "ptx-backend"
 version = "0.1.0"
 edition = "2024"
 license = "Apache-2.0"
@@ -8,3 +8,13 @@ homepage = "https://treutech.io/ptxgen-rs"
 repository = "https://github.com/treutech/ptxgen-rs"
 
 [dependencies]
+ir-model = { path = "../ir_model" }
+llvm-parser = { path = "../llvm_parser" }
+clap = { version = "4.5.41", features = ["derive"] }
+
+[[bin]]
+name = "ptx-backend"
+path = "src/main.rs"
+
+[dev-dependencies]
+insta = "1.43.1"

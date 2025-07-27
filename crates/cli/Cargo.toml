@@ -10,8 +10,11 @@ repository = "https://github.com/treutech/ptxgen-rs"
 
 [dependencies]
 clap = { version = "4.5.41", features = ["derive"] }
-llvm_parser = { path = "../llvm_parser" }
-ptx_backend = { path = "../ptx_backend" }
+llvm-parser = { path = "../llvm_parser" }
+ptx-backend = { path = "../ptx_backend" }
 llvm-ir = "0.11.3"
 anyhow = "1.0.98"
 ir-model = { path = "../ir_model" }
+
+[dev-dependencies]
+insta = "1.43.1"

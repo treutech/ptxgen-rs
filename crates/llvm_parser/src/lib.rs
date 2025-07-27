@@ -1,4 +1,5 @@
 pub mod convert;
+pub mod parse_module;
 
 use llvm_ir::Module;
 use anyhow::Result;
