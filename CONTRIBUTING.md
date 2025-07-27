@@ -70,4 +70,4 @@ Be respectful, constructive, and inclusive. We aim to foster an open and welcomi
 
 ---
 
-Maintained by [Raúl Estrada](https://treutech.io).
+Maintained by [Raul Estrada](https://treutech.io).
