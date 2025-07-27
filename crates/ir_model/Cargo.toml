@@ -8,3 +8,5 @@ homepage = "https://treutech.io/ptxgen-rs"
 repository = "https://github.com/treutech/ptxgen-rs"
 
 [dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.141"

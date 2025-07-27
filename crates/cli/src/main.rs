@@ -1,7 +1,9 @@
 use std::env;
 use std::fs;
 use llvm_ir::Module;
-use anyhow::{Context, Result};
+use anyhow::{Result};
+use llvm_parser::convert::lower;
+use ir_model::Instruction;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();
@@ -11,8 +13,7 @@ fn main() -> Result<()> {
     }
 
     let file = &args[1];
-    let ll_text = fs::read_to_string(file)
-        .with_context(|| format!("Failed to read file: {}", file))?;
+    let ll_text = fs::read_to_string(file)?;
 
     let module = Module::from_ir_str(&ll_text)
         .map_err(|e| anyhow::anyhow!("Failed to parse LLVM IR: {}", e))?;
@@ -22,7 +23,8 @@ fn main() -> Result<()> {
         for block in &func.basic_blocks {
             println!("  Basic block: {}", block.name);
             for instr in &block.instrs {
-                println!("    {:?}", instr);
+                let lowered: Instruction = lower(instr);
+                println!("    {:?}", lowered);
             }
         }
     }

@@ -1,3 +1,5 @@
+pub mod convert;
+
 use llvm_ir::Module;
 use anyhow::Result;
 
