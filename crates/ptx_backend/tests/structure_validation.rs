@@ -81,7 +81,7 @@ fn validate_structural_rules() {
         .join("saxpy.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");
-    
+
     let mut ptx = String::new();
 
     for func in module.functions {
@@ -93,8 +93,8 @@ fn validate_structural_rules() {
                 (block.name.to_string(), instrs)
             })
             .collect::<Vec<_>>();
-        
-        for line in lower_function(&func.name, &all_instrs) {
+
+        for line in lower_function(&func.name, &all_instrs, "sm_75") {
             ptx.push_str(&line);
             ptx.push('\n');
         }

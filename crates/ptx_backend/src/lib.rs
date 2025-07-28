@@ -20,11 +20,15 @@ use crate::utils::{clean_operand, get_register_type};
 use ir_model::Instruction;
 use std::collections::HashMap;
 
-pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> Vec<String> {
+pub fn lower_function(
+    name: &str,
+    all_instrs: &[(String, Vec<Instruction>)],
+    target: &str,
+) -> Vec<String> {
     let mut output = vec![];
 
     output.push(format!("// Function: {}", name));
-    output.push(emit_header());
+    output.push(emit_header(target));
 
     let flat_instrs: Vec<&Instruction> = all_instrs
         .iter()
@@ -49,7 +53,12 @@ pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> 
         .iter()
         .rev()
         .flat_map(|(_, instrs)| instrs.iter().rev())
-        .find(|i| !matches!(i, Instruction::Alloca { .. } | Instruction::GetElementPtr { .. }));
+        .find(|i| {
+            !matches!(
+                i,
+                Instruction::Alloca { .. } | Instruction::GetElementPtr { .. }
+            )
+        });
 
     if let Some(instr) = last_instr {
         match instr {
@@ -59,19 +68,13 @@ pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> 
     } else {
         output.push("    ret;".into()); // fallback defensivo
     }
-    
+
     output.push("}".into());
     output
 }
 
-fn emit_header() -> String {
-    [
-        ".version 7.0",
-        ".target sm_75",
-        ".address_size 64",
-        "".into(),
-    ]
-    .join("\n")
+fn emit_header(target: &str) -> String {
+    format!(".version 7.0\n.target {}\n.address_size 64\n", target)
 }
 
 pub fn declare_registers(instrs: &[&Instruction]) -> String {
@@ -106,6 +109,11 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
             _ => {}
         }
     }
+
+    // Sort to warant tests determinism
+    f32_regs.sort();
+    s32_regs.sort();
+    pred_regs.sort();    
 
     let mut out = vec![];
     if !f32_regs.is_empty() {

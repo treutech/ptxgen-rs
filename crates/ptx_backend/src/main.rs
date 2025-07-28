@@ -16,7 +16,6 @@
 // limitations under the License.
 
 use clap::Parser;
-use ir_model::Instruction;
 use llvm_parser::parse_module::parse_module;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -26,6 +25,8 @@ struct Args {
     input: String,
     #[arg(long)]
     emit: bool,
+    #[arg(long, default_value = "sm_75")]
+    target: String,
 }
 
 fn main() {
@@ -38,33 +39,21 @@ fn main() {
         Box::new(std::io::stdout())
     };
 
-    // Emitir encabezado global solo una vez
-    writeln!(output, ".version 7.0").unwrap();
-    writeln!(output, ".target sm_75").unwrap();
-    writeln!(output, ".address_size 64").unwrap();
-    writeln!(output).unwrap();
-
     for func in module.functions {
-        writeln!(output, "// Function: {}", func.name).unwrap();
+        let instrs = func
+            .basic_blocks
+            .iter()
+            .map(|bb| {
+                let name = format!("{}", bb.name); // convierte Name a String
+                let lowered = bb.instrs.iter().map(llvm_parser::convert::lower).collect();
+                (name, lowered)
+            })
+            .collect::<Vec<_>>();
 
-        // Reunir todas las instrucciones de todos los bloques
-        let mut instrs = vec![];
-        for block in &func.basic_blocks {
-            writeln!(output, "// Block: {}", block.name).unwrap();
-            instrs.extend(block.instrs.iter().map(llvm_parser::convert::lower));
+        let lines = ptx_backend::lower_function(&func.name, &instrs, &args.target);
+        for line in lines {
+            writeln!(output, "{}", line).unwrap();
         }
-
-        // Emitir declaración de registros y encabezado de función
-        let instr_refs: Vec<&Instruction> = instrs.iter().collect();
-        writeln!(output, "{}", ptx_backend::declare_registers(&instr_refs)).unwrap();
-        writeln!(output, ".entry {} {{", func.name).unwrap();
-
-        // Emitir instrucciones
-        for instr in &instrs {
-            writeln!(output, "{}", ptx_backend::to_ptx(instr)).unwrap();
-        }
-
-        writeln!(output, "}}").unwrap(); // cerrar función
-        writeln!(output).unwrap();
+        writeln!(output).unwrap(); // separación entre funciones
     }
 }
