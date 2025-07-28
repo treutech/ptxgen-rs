@@ -35,6 +35,9 @@ pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> 
     output.push(format!(".entry {} {{", name));
 
     for (block_name, instrs) in all_instrs {
+        if instrs.is_empty() {
+            continue;
+        }
         output.push(format!("{}:", clean_operand(block_name)));
         for instr in instrs {
             let line = to_ptx(instr);
@@ -42,6 +45,21 @@ pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> 
         }
     }
 
+    let last_instr = all_instrs
+        .iter()
+        .rev()
+        .flat_map(|(_, instrs)| instrs.iter().rev())
+        .find(|i| !matches!(i, Instruction::Alloca { .. } | Instruction::GetElementPtr { .. }));
+
+    if let Some(instr) = last_instr {
+        match instr {
+            Instruction::Ret | Instruction::Br { .. } => {}
+            _ => output.push("    ret;".into()),
+        }
+    } else {
+        output.push("    ret;".into()); // fallback defensivo
+    }
+    
     output.push("}".into());
     output
 }
