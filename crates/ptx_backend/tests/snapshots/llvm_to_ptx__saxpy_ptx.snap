@@ -11,8 +11,8 @@ expression: actual
 // Block: %loop
 // Block: %body
 // Block: %exit
-.reg .f32 %y_, %a, %out_, %xval, %yval, %next, %ax, %0, %i, %idx, %res, %x_;
-.reg .s32 %next, %1, %idx, %n;
+.reg .f32 %res, %i, %y_, %yval, %idx, %x_, %ax, %out_, %xval, %next, %a, %0;
+.reg .s32 %1, %next, %idx, %n;
 .reg .pred %cmp;
 .entry saxpy {
         // local stack allocation: i

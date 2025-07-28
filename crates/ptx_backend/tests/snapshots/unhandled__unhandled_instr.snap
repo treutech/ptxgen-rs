@@ -1,0 +1,14 @@
+---
+source: crates/ptx_backend/tests/unhandled.rs
+expression: actual
+---
+.version 7.0
+.target sm_75
+.address_size 64
+
+// Function: test
+// Block: entry
+.entry test {
+        // local stack allocation: i
+        // unhandled: foobar %a, %b
+}
