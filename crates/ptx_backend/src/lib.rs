@@ -35,27 +35,11 @@ pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> 
     output.push(format!(".entry {} {{", name));
 
     for (block_name, instrs) in all_instrs {
-        output.push(format!("    // Block: {}", block_name));
+        output.push(format!("{}:", clean_operand(block_name)));
         for instr in instrs {
             let line = to_ptx(instr);
             output.push(format!("    {}", line));
         }
-    }
-
-    output.push("}".into());
-    output
-}
-
-pub fn lower_to_ptx(instrs: &[&Instruction]) -> Vec<String> {
-    let mut output = vec![];
-
-    output.push("// Function: saxpy".into());
-    output.push(emit_header());
-    output.push(declare_registers(instrs));
-    output.push(".entry saxpy {".into());
-
-    for instr in instrs {
-        output.push(to_ptx(instr));
     }
 
     output.push("}".into());
@@ -132,64 +116,72 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
 
 pub fn to_ptx(instr: &Instruction) -> String {
     match instr {
-        Instruction::FMul { dst, lhs, rhs } => {
-            format!(
-                "    fmul.f32 {}, {}, {};",
-                clean_operand(dst),
-                clean_operand(lhs),
-                clean_operand(rhs)
-            )
-        }
-        Instruction::FAdd { dst, lhs, rhs } => {
-            format!(
-                "    fadd.f32 {}, {}, {};",
-                clean_operand(dst),
-                clean_operand(lhs),
-                clean_operand(rhs)
-            )
-        }
-        Instruction::Load { dst, src } => {
-            format!(
-                "    ld.global.f32 {}, {};",
-                clean_operand(dst),
-                clean_operand(src)
-            )
-        }
-        Instruction::Store { dst, value } => {
-            format!(
-                "    st.global.f32 {}, {};",
-                clean_operand(dst),
-                clean_operand(value)
-            )
-        }
-        Instruction::Add { dst, lhs, rhs } => {
-            format!(
-                "    add.s32 {}, {}, {};",
-                clean_operand(dst),
-                clean_operand(lhs),
-                clean_operand(rhs)
-            )
-        }
-        Instruction::ICmp { dst, lhs, rhs, .. } => {
-            format!(
-                "    setp.lt.s32 {}, {}, {};",
-                clean_operand(dst),
-                clean_operand(lhs),
-                clean_operand(rhs)
-            )
-        }
+        Instruction::FMul { dst, lhs, rhs } => format!(
+            "    fmul.f32 {}, {}, {};",
+            clean_operand(dst),
+            clean_operand(lhs),
+            clean_operand(rhs)
+        ),
+        Instruction::FAdd { dst, lhs, rhs } => format!(
+            "    fadd.f32 {}, {}, {};",
+            clean_operand(dst),
+            clean_operand(lhs),
+            clean_operand(rhs)
+        ),
+        Instruction::Load { dst, src } => format!(
+            "    ld.global.f32 {}, {};",
+            clean_operand(dst),
+            clean_operand(src)
+        ),
+        Instruction::Store { dst, value } => format!(
+            "    st.global.f32 {}, {};",
+            clean_operand(dst),
+            clean_operand(value)
+        ),
+        Instruction::Add { dst, lhs, rhs } => format!(
+            "    add.s32 {}, {}, {};",
+            clean_operand(dst),
+            clean_operand(lhs),
+            clean_operand(rhs)
+        ),
+        Instruction::ICmp { dst, lhs, rhs, .. } => format!(
+            "    setp.lt.s32 {}, {}, {};",
+            clean_operand(dst),
+            clean_operand(lhs),
+            clean_operand(rhs)
+        ),
+        Instruction::Br {
+            cond,
+            target_true,
+            target_false,
+        } => match (cond, target_false) {
+            (Some(c), Some(f)) => format!(
+                "    @{} bra {};\n    bra {};",
+                clean_operand(c),
+                target_true,
+                f
+            ),
+            (None, _) => format!("    bra {};", target_true),
+            _ => "// invalid conditional branch".into(),
+        },
+        Instruction::Ret => "    ret;".to_string(),
         Instruction::Alloca { dst, .. } => {
             format!("    // local stack allocation: {}", clean_operand(dst))
         }
-        Instruction::GetElementPtr { dst, base, index } => {
-            format!(
-                "    // address calc: {} = {}[{}]",
-                clean_operand(dst),
-                clean_operand(base),
-                clean_operand(index)
-            )
-        }
+        Instruction::GetElementPtr { dst, base, index } => format!(
+            "    // address calc: {} = {}[{}]",
+            clean_operand(dst),
+            clean_operand(base),
+            clean_operand(index)
+        ),
+        //Instruction::Phi { dst, incomings } => {
+        //    let parts = incomings
+        //        .iter()
+        //       .map(|(val, label)| format!("[{}, {}]", clean_operand(val), clean_operand(label)))
+        //       .collect::<Vec<_>>()
+        //       .join(", ");
+        //   format!("    // phi: {} = {}", clean_operand(dst), parts)
+        //}
         Instruction::Unhandled(s) => format!("    // unhandled: {}", s),
-        _ => String::from("    // unsupported instruction"),
     }
 }

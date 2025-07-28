@@ -1,5 +1,6 @@
 ---
 source: crates/ptx_backend/tests/dot_ll.rs
+assertion_line: 57
 expression: actual
 ---
 .version 7.0
@@ -11,8 +12,8 @@ expression: actual
 // Block: %loop
 // Block: %body
 // Block: %exit
-.reg .f32 %prod, %i, %acc, %new_sum, %next, %result, %idx, %y_, %sum, %xval, %yval, %0, %x_;
-.reg .s32 %1, %next, %idx, %n;
+.reg .f32 %sum, %prod, %new_sum, %result, %y_, %acc, %0, %idx, %yval, %x_, %xval, %next, %i;
+.reg .s32 %1, %n, %idx, %next;
 .reg .pred %cond;
 .entry dot {
         // local stack allocation: i

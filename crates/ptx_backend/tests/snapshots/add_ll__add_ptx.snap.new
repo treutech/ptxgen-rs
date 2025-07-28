@@ -1,5 +1,6 @@
 ---
 source: crates/ptx_backend/tests/add_ll.rs
+assertion_line: 57
 expression: actual
 ---
 .version 7.0
@@ -8,8 +9,8 @@ expression: actual
 
 // Function: add
 // Block: %entry
-.reg .f32 %b_val, %sum, %a_val, %a, %b, %out;
-.reg .s32 %sum, %b_val, %a_val;
+.reg .f32 %b, %a_val, %out, %b_val, %sum, %a;
+.reg .s32 %a_val, %b_val, %sum;
 .entry add {
         ld.global.f32 a_val, a;
         ld.global.f32 b_val, b;

@@ -1,5 +1,6 @@
 ---
 source: crates/ptx_backend/tests/fib_ll.rs
+assertion_line: 57
 expression: actual
 ---
 .version 7.0
@@ -11,8 +12,8 @@ expression: actual
 // Block: %loop
 // Block: %body
 // Block: %exit
-.reg .f32 %i, %1, %b, %idx, %aval, %out_, %a, %bval, %next, %0, %sum;
-.reg .s32 %idx, %aval, %sum, %bval, %1, %next, %n;
+.reg .f32 %sum, %0, %aval, %i, %1, %b, %a, %idx, %bval, %next, %out_;
+.reg .s32 %n, %idx, %aval, %next, %1, %bval, %sum;
 .reg .pred %cond;
 .entry fib {
         // local stack allocation: a
