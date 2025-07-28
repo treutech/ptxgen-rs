@@ -18,7 +18,7 @@
 mod utils;
 use crate::utils::{clean_operand, get_register_type};
 use ir_model::Instruction;
-use std::collections::HashSet;
+use std::collections::HashMap;
 
 pub fn lower_function(name: &str, all_instrs: &[(String, Vec<Instruction>)]) -> Vec<String> {
     let mut output = vec![];
@@ -57,25 +57,35 @@ fn emit_header() -> String {
 }
 
 pub fn declare_registers(instrs: &[&Instruction]) -> String {
-    let mut f32_regs = HashSet::new();
-    let mut s32_regs = HashSet::new();
-    let mut pred_regs = HashSet::new();
+    let mut reg_types: HashMap<String, &str> = HashMap::new();
 
     for instr in instrs {
         for name in instr.used_operands() {
             let reg = clean_operand(&name);
-            match get_register_type(instr, &name) {
-                Some("f32") => {
-                    f32_regs.insert(reg.to_string());
+            if let Some(reg_type) = get_register_type(instr, &name) {
+                match reg_types.get(&reg) {
+                    Some(&existing_type) if existing_type != reg_type => {
+                        reg_types.insert(reg.clone(), dominant_type(existing_type, reg_type));
+                    }
+                    None => {
+                        reg_types.insert(reg.clone(), reg_type);
+                    }
+                    _ => {}
                 }
-                Some("s32") => {
-                    s32_regs.insert(reg.to_string());
-                }
-                Some("pred") => {
-                    pred_regs.insert(reg.to_string());
-                }
-                _ => {}
             }
+        }
+    }
+
+    let mut f32_regs = vec![];
+    let mut s32_regs = vec![];
+    let mut pred_regs = vec![];
+
+    for (reg, ty) in reg_types {
+        match ty {
+            "f32" => f32_regs.push(reg),
+            "s32" => s32_regs.push(reg),
+            "pred" => pred_regs.push(reg),
+            _ => {}
         }
     }
 
@@ -85,8 +95,8 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
             ".reg .f32 {};",
             f32_regs
                 .iter()
-                .map(|r: &String| format!("%{}", r))
-                .collect::<Vec<String>>()
+                .map(|r| format!("%{}", r))
+                .collect::<Vec<_>>()
                 .join(", ")
         ));
     }
@@ -95,8 +105,8 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
             ".reg .s32 {};",
             s32_regs
                 .iter()
-                .map(|r: &String| format!("%{}", r))
-                .collect::<Vec<String>>()
+                .map(|r| format!("%{}", r))
+                .collect::<Vec<_>>()
                 .join(", ")
         ));
     }
@@ -105,13 +115,21 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
             ".reg .pred {};",
             pred_regs
                 .iter()
-                .map(|r: &String| format!("%{}", r))
-                .collect::<Vec<String>>()
+                .map(|r| format!("%{}", r))
+                .collect::<Vec<_>>()
                 .join(", ")
         ));
     }
-    out.push(String::new()); // for newline
+    out.push(String::new());
     out.join("\n")
+}
+
+fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
+    match (a, b) {
+        ("s32", _) | (_, "s32") => "s32",
+        ("f32", _) | (_, "f32") => "f32",
+        _ => "pred",
+    }
 }
 
 pub fn to_ptx(instr: &Instruction) -> String {
@@ -174,14 +192,6 @@ pub fn to_ptx(instr: &Instruction) -> String {
             clean_operand(base),
             clean_operand(index)
         ),
-        //Instruction::Phi { dst, incomings } => {
-        //    let parts = incomings
-        //        .iter()
-        //       .map(|(val, label)| format!("[{}, {}]", clean_operand(val), clean_operand(label)))
-        //       .collect::<Vec<_>>()
-        //       .join(", ");
-        //   format!("    // phi: {} = {}", clean_operand(dst), parts)
-        //}
         Instruction::Unhandled(s) => format!("    // unhandled: {}", s),
     }
 }

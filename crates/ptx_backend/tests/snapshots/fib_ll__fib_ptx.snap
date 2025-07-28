@@ -11,8 +11,8 @@ expression: actual
 // Block: %loop
 // Block: %body
 // Block: %exit
-.reg .f32 %i, %1, %b, %idx, %aval, %out_, %a, %bval, %next, %0, %sum;
-.reg .s32 %idx, %aval, %sum, %bval, %1, %next, %n;
+.reg .f32 %out_, %a, %b, %0, %i;
+.reg .s32 %bval, %1, %n, %aval, %sum, %idx, %next;
 .reg .pred %cond;
 .entry fib {
         // local stack allocation: a
