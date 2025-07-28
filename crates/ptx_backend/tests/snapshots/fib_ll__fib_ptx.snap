@@ -2,63 +2,34 @@
 source: crates/ptx_backend/tests/fib_ll.rs
 expression: actual
 ---
+.version 7.0
+.target sm_75
+.address_size 64
+
 // Function: fib
 // Block: %entry
-// Function: saxpy
-.version 7.0
-.target sm_75
-.address_size 64
-
-.reg .f32 %b, %0, %a, %1, %i;
-
-.entry saxpy {
-    // local stack allocation: a
-    // local stack allocation: b
-    // local stack allocation: i
-    st.global.f32 a, 0;
-    st.global.f32 b, 1;
-    st.global.f32 i, 0;
-}
 // Block: %loop
-// Function: saxpy
-.version 7.0
-.target sm_75
-.address_size 64
-
-.reg .f32 %i, %idx;
-.reg .s32 %n, %idx;
-.reg .pred %cond;
-
-.entry saxpy {
-    ld.global.f32 idx, i;
-    setp.lt.s32 cond, idx, n;
-}
 // Block: %body
-// Function: saxpy
-.version 7.0
-.target sm_75
-.address_size 64
-
-.reg .f32 %aval, %out_, %i, %next, %sum, %b, %bval, %a;
-.reg .s32 %idx, %aval, %bval, %next, %1, %sum;
-
-.entry saxpy {
-    ld.global.f32 aval, a;
-    // address calc: out_ = out[idx]
-    st.global.f32 out_, aval;
-    ld.global.f32 bval, b;
-    add.s32 sum, aval, bval;
-    st.global.f32 a, bval;
-    st.global.f32 b, sum;
-    add.s32 next, idx, 1;
-    st.global.f32 i, next;
-}
 // Block: %exit
-// Function: saxpy
-.version 7.0
-.target sm_75
-.address_size 64
-
-
-.entry saxpy {
+.reg .f32 %bval, %next, %1, %i, %b, %0, %idx, %aval, %a, %out_, %sum;
+.reg .s32 %idx, %aval, %bval, %sum, %next, %1, %n;
+.reg .pred %cond;
+.entry fib {
+        // local stack allocation: a
+        // local stack allocation: b
+        // local stack allocation: i
+        st.global.f32 a, 0;
+        st.global.f32 b, 1;
+        st.global.f32 i, 0;
+        ld.global.f32 idx, i;
+        setp.lt.s32 cond, idx, n;
+        ld.global.f32 aval, a;
+        // address calc: out_ = out[idx]
+        st.global.f32 out_, aval;
+        ld.global.f32 bval, b;
+        add.s32 sum, aval, bval;
+        st.global.f32 a, bval;
+        st.global.f32 b, sum;
+        add.s32 next, idx, 1;
+        st.global.f32 i, next;
 }

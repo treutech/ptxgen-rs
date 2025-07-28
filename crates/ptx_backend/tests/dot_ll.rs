@@ -16,7 +16,7 @@
 // limitations under the License.
 
 use llvm_parser::parse_module::parse_module;
-use ptx_backend::lower_to_ptx;
+use ptx_backend::{declare_registers, to_ptx};
 
 #[test]
 fn test_dot_ptx_output() {
@@ -28,19 +28,30 @@ fn test_dot_ptx_output() {
 
     let mut actual = String::new();
 
+    // Emit global header once
+    actual.push_str(".version 7.0\n");
+    actual.push_str(".target sm_75\n");
+    actual.push_str(".address_size 64\n\n");
+
     for func in module.functions {
         actual.push_str(&format!("// Function: {}\n", func.name));
-        for block in func.basic_blocks {
+
+        let mut instrs = vec![];
+
+        for block in &func.basic_blocks {
             actual.push_str(&format!("// Block: {}\n", block.name));
-            let instrs = block
-                .instrs
-                .iter()
-                .map(llvm_parser::convert::lower)
-                .collect::<Vec<_>>();
-            for line in lower_to_ptx(&instrs) {
-                actual.push_str(&format!("{}\n", line));
-            }
+            instrs.extend(block.instrs.iter().map(llvm_parser::convert::lower));
         }
+
+        let instr_refs: Vec<&_> = instrs.iter().collect();
+        actual.push_str(&declare_registers(&instr_refs));
+        actual.push_str(&format!(".entry {} {{\n", func.name));
+
+        for instr in &instrs {
+            actual.push_str(&format!("    {}\n", to_ptx(instr)));
+        }
+
+        actual.push_str("}\n\n");
     }
 
     insta::assert_snapshot!("dot_ptx", actual);

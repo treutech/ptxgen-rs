@@ -16,6 +16,7 @@
 // limitations under the License.
 
 use clap::Parser;
+use ir_model::Instruction;
 use llvm_parser::parse_module::parse_module;
 use std::fs::File;
 use std::io::{BufWriter, Write};
@@ -54,7 +55,8 @@ fn main() {
         }
 
         // Emitir declaración de registros y encabezado de función
-        writeln!(output, "{}", ptx_backend::declare_registers(&instrs)).unwrap();
+        let instr_refs: Vec<&Instruction> = instrs.iter().collect();
+        writeln!(output, "{}", ptx_backend::declare_registers(&instr_refs)).unwrap();
         writeln!(output, ".entry {} {{", func.name).unwrap();
 
         // Emitir instrucciones
@@ -66,4 +68,3 @@ fn main() {
         writeln!(output).unwrap();
     }
 }
-

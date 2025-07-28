@@ -27,5 +27,10 @@ pub fn parse_module<P: AsRef<Path>>(path: P) -> Result<Module> {
 
     Module::from_ir_str(&ll_text)
         .map_err(|e| anyhow::anyhow!(e))
-        .with_context(|| format!("Failed to parse LLVM IR in file: {}", path.as_ref().display()))
+        .with_context(|| {
+            format!(
+                "Failed to parse LLVM IR in file: {}",
+                path.as_ref().display()
+            )
+        })
 }

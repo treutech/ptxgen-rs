@@ -15,7 +15,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
 use ir_model::Instruction;
 use llvm_ir::Module;
 use llvm_parser::convert::lower;

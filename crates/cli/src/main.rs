@@ -15,13 +15,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
+use anyhow::Result;
+use ir_model::Instruction;
+use llvm_ir::Module;
+use llvm_parser::convert::lower;
 use std::env;
 use std::fs;
-use llvm_ir::Module;
-use anyhow::{Result};
-use llvm_parser::convert::lower;
-use ir_model::Instruction;
 
 fn main() -> Result<()> {
     let args: Vec<String> = env::args().collect();

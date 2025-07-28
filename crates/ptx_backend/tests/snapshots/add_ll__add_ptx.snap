@@ -2,19 +2,17 @@
 source: crates/ptx_backend/tests/add_ll.rs
 expression: actual
 ---
-// Function: add
-// Block: %entry
-// Function: saxpy
 .version 7.0
 .target sm_75
 .address_size 64
 
-.reg .f32 %a, %b_val, %a_val, %b, %out, %sum;
+// Function: add
+// Block: %entry
+.reg .f32 %a, %a_val, %sum, %b_val, %b, %out;
 .reg .s32 %a_val, %b_val, %sum;
-
-.entry saxpy {
-    ld.global.f32 a_val, a;
-    ld.global.f32 b_val, b;
-    add.s32 sum, a_val, b_val;
-    st.global.f32 out, sum;
+.entry add {
+        ld.global.f32 a_val, a;
+        ld.global.f32 b_val, b;
+        add.s32 sum, a_val, b_val;
+        st.global.f32 out, sum;
 }
