@@ -19,11 +19,10 @@ use llvm_parser::parse_module::parse_module;
 use ptx_backend::lower_to_ptx;
 
 #[test]
-fn test_saxpy_ptx_output() {
-
+fn test_fib_ptx_output() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("examples")
-        .join("saxpy.ll");
+        .join("fib.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");
 
@@ -44,5 +43,5 @@ fn test_saxpy_ptx_output() {
         }
     }
 
-    insta::assert_snapshot!("saxpy_ptx", actual);
+    insta::assert_snapshot!("fib_ptx", actual);
 }

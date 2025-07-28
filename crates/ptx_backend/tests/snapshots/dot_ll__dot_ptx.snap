@@ -1,19 +1,21 @@
 ---
-source: crates/ptx_backend/tests/llvm_to_ptx.rs
+source: crates/ptx_backend/tests/dot_ll.rs
 expression: actual
 ---
-// Function: saxpy
+// Function: dot
 // Block: %entry
 // Function: saxpy
 .version 7.0
 .target sm_75
 .address_size 64
 
-.reg .f32 %0, %i;
+.reg .f32 %sum, %0, %i;
 
 .entry saxpy {
     // local stack allocation: i
+    // local stack allocation: sum
     st.global.f32 i, 0;
+    st.global.f32 sum, 0;
 }
 // Block: %loop
 // Function: saxpy
@@ -23,11 +25,11 @@ expression: actual
 
 .reg .f32 %idx, %i;
 .reg .s32 %idx, %n;
-.reg .pred %cmp;
+.reg .pred %cond;
 
 .entry saxpy {
     ld.global.f32 idx, i;
-    setp.lt.s32 cmp, idx, n;
+    setp.lt.s32 cond, idx, n;
 }
 // Block: %body
 // Function: saxpy
@@ -35,18 +37,18 @@ expression: actual
 .target sm_75
 .address_size 64
 
-.reg .f32 %i, %y_, %xval, %ax, %a, %yval, %x_, %res, %out_, %next;
-.reg .s32 %idx, %next, %1;
+.reg .f32 %sum, %acc, %new_sum, %xval, %yval, %x_, %i, %next, %y_, %prod;
+.reg .s32 %1, %idx, %next;
 
 .entry saxpy {
     // address calc: x_ = x[idx]
     // address calc: y_ = y[idx]
-    // address calc: out_ = out[idx]
     ld.global.f32 xval, x_;
     ld.global.f32 yval, y_;
-    fmul.f32 ax, a, xval;
-    fadd.f32 res, ax, yval;
-    st.global.f32 out_, res;
+    fmul.f32 prod, xval, yval;
+    ld.global.f32 acc, sum;
+    fadd.f32 new_sum, acc, prod;
+    st.global.f32 sum, new_sum;
     add.s32 next, idx, 1;
     st.global.f32 i, next;
 }
@@ -56,6 +58,8 @@ expression: actual
 .target sm_75
 .address_size 64
 
+.reg .f32 %sum, %result;
 
 .entry saxpy {
+    ld.global.f32 result, sum;
 }
