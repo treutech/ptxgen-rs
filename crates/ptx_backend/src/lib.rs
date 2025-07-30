@@ -30,14 +30,17 @@ pub fn lower_function(
     output.push(format!("// Function: {}", name));
     output.push(emit_header(target));
 
+    // Collect all the flat instructions to declare registers
     let flat_instrs: Vec<&Instruction> = all_instrs
         .iter()
         .flat_map(|(_, instrs)| instrs.iter())
         .collect();
 
+    // Declarations and .entry
     output.push(declare_registers(&flat_instrs));
     output.push(format!(".entry {} {{", name));
 
+    // Body
     for (block_name, instrs) in all_instrs {
         if instrs.is_empty() {
             continue;
@@ -49,24 +52,21 @@ pub fn lower_function(
         }
     }
 
-    let last_instr = all_instrs
-        .iter()
-        .rev()
-        .flat_map(|(_, instrs)| instrs.iter().rev())
-        .find(|i| {
-            !matches!(
-                i,
-                Instruction::Alloca { .. } | Instruction::GetElementPtr { .. }
-            )
-        });
+    // Automatic ret if no explicit
+    let last_instr = flat_instrs.iter().rev().find(|i| {
+        !matches!(
+            i,
+            Instruction::Alloca { .. } | Instruction::GetElementPtr { .. }
+        )
+    });
 
     if let Some(instr) = last_instr {
         match instr {
-            Instruction::Ret {..} | Instruction::Br { .. } => {}
+            Instruction::Ret { .. } | Instruction::Br { .. } => {}
             _ => output.push("    ret;".into()),
         }
     } else {
-        output.push("    ret;".into()); // fallback defensivo
+        output.push("    ret;".into());
     }
 
     output.push("}".into());
