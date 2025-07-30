@@ -16,7 +16,9 @@
 // limitations under the License.
 
 use llvm_parser::parse_module::parse_module;
-use ptx_backend::{declare_registers, to_ptx};
+use ptx_backend::lower_function;
+use insta::assert_snapshot;
+
 
 #[test]
 fn test_saxpy_ptx_output() {
@@ -27,37 +29,29 @@ fn test_saxpy_ptx_output() {
     let module = parse_module(&path).expect("Failed to parse module");
 
     let mut actual = String::new();
-
-    // Emit global header once
-    actual.push_str(".version 7.0\n");
-    actual.push_str(".target sm_75\n");
-    actual.push_str(".address_size 64\n\n");
+    actual.push_str(".version 7.0\n.target sm_75\n.address_size 64\n\n");
 
     for func in module.functions {
-        actual.push_str(&format!("// Function: {}\n", func.name));
-
-        let mut instrs = vec![];
-
-        for block in &func.basic_blocks {
-            actual.push_str(&format!("// Block: {}\n", block.name));
-            instrs.extend(
-                block
+        let instrs = func
+            .basic_blocks
+            .iter()
+            .map(|bb| {
+                let name = format!("{}", bb.name);
+                let lowered = bb
                     .instrs
                     .iter()
-                    .map(|i| llvm_parser::convert::lower(&func.name, i)),
-            );
+                    .map(|instr| llvm_parser::convert::lower(&func.name, instr))
+                    .collect();
+                (name, lowered)
+            })
+            .collect::<Vec<_>>();
+
+        let lines = lower_function(&func.name, &instrs, "sm_75");
+        for line in lines {
+            actual.push_str(&format!("{}\n", line));
         }
-
-        let instr_refs: Vec<&_> = instrs.iter().collect();
-        actual.push_str(&declare_registers(&instr_refs));
-        actual.push_str(&format!(".entry {} {{\n", func.name));
-
-        for instr in &instrs {
-            actual.push_str(&format!("    {}\n", to_ptx(instr)));
-        }
-
-        actual.push_str("}\n\n");
+        actual.push('\n');
     }
 
-    insta::assert_snapshot!("saxpy_ptx", actual);
+    assert_snapshot!("saxpy_ptx", actual);
 }

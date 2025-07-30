@@ -7,18 +7,22 @@ expression: actual
 .address_size 64
 
 // Function: saxpy
-// Block: %entry
-// Block: %loop
-// Block: %body
-// Block: %exit
+.version 7.0
+.target sm_75
+.address_size 64
+
 .reg .f32 %0, %a, %ax, %i, %out_, %res, %x_, %xval, %y_, %yval;
 .reg .s32 %1, %idx, %n, %next;
 .reg .pred %cmp;
+
 .entry saxpy {
+entry:
         // local stack allocation: i
         st.global.f32 i, 0;
+loop:
         ld.global.f32 idx, i;
         setp.lt.s32 cmp, idx, n;
+body:
         // address calc: x_ = x[idx]
         // address calc: y_ = y[idx]
         // address calc: out_ = out[idx]
@@ -29,4 +33,5 @@ expression: actual
         st.global.f32 out_, res;
         add.s32 next, idx, 1;
         st.global.f32 i, next;
+    ret;
 }

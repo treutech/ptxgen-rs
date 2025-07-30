@@ -25,7 +25,7 @@ fn test_generated_ptx_is_valid_for_nvcc() {
 
     Command::cargo_bin("ptx-backend")
         .unwrap()
-        .args(["--emit", "examples/minimal_ret.ll"])
+        .args(["examples/minimal_ret.ll", "--emit"])
         .assert()
         .success();
 
