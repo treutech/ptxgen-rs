@@ -1,0 +1,15 @@
+---
+source: crates/ptx_backend/tests/llvm_to_ptx_extra.rs
+expression: "run_test(\"phi_basic.ll\")"
+---
+// Function: main
+.version 7.0
+.target sm_75
+.address_size 64
+
+
+.entry main {
+merge:
+        // unhandled: Phi(Phi { incoming_values: [(ConstantOperand(ConstantRef(Int { bits: 32, value: 1 })), Name("a")), (ConstantOperand(ConstantRef(Int { bits: 32, value: 2 })), Name("b"))], dest: Name("val"), to_type: TypeRef(IntegerType { bits: 32 }), debugloc: None })
+    ret;
+}

@@ -1,0 +1,13 @@
+---
+source: crates/ptx_backend/tests/llvm_to_ptx_extra.rs
+expression: "run_test(\"br_cond.ll\")"
+---
+// Function: br_cond
+.version 7.0
+.target sm_75
+.address_size 64
+
+
+.entry br_cond {
+    ret;
+}

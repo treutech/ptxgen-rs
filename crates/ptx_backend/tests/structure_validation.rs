@@ -15,8 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use llvm_parser::parse_module::parse_module;
 use llvm_parser::convert::lower;
+use llvm_parser::parse_module::parse_module;
 use ptx_backend::lower_function;
 
 fn check_single_entry(ptx: &str) -> bool {
@@ -24,9 +24,9 @@ fn check_single_entry(ptx: &str) -> bool {
 }
 
 fn check_single_header(ptx: &str) -> bool {
-    ptx.matches(".version").count() == 1 &&
-        ptx.matches(".target").count() == 1 &&
-        ptx.matches(".address_size").count() == 1
+    ptx.matches(".version").count() == 1
+        && ptx.matches(".target").count() == 1
+        && ptx.matches(".address_size").count() == 1
 }
 
 fn check_register_collisions(ptx: &str) -> bool {
@@ -35,11 +35,14 @@ fn check_register_collisions(ptx: &str) -> bool {
     let mut map = HashMap::new();
     for line in ptx.lines().filter(|l| l.trim().starts_with(".reg")) {
         let parts = line.split_whitespace().collect::<Vec<_>>();
-        if parts.len() < 3 { continue; }
+        if parts.len() < 3 {
+            continue;
+        }
 
         let reg_type = parts[1]; // .f32, .s32, etc.
         let regs = parts[2..].join(" ");
-        let regs = regs.trim_end_matches(';')
+        let regs = regs
+            .trim_end_matches(';')
             .split(',')
             .map(|r| r.trim_start_matches('%').trim());
 
@@ -72,10 +75,8 @@ fn check_terminal_instruction(ptx: &str) -> bool {
     last_instr == "ret;" || last_instr.starts_with("bra ")
 }
 
-
 #[test]
 fn validate_structural_rules() {
-
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("examples")
         .join("saxpy.ll");
@@ -102,6 +103,12 @@ fn validate_structural_rules() {
 
     assert!(check_single_entry(&ptx), "multiple .entry sections");
     assert!(check_single_header(&ptx), "redundant header declarations");
-    assert!(check_register_collisions(&ptx), "type conflict in register declarations");
-    assert!(check_terminal_instruction(&ptx), "missing ret or bra at function end");
+    assert!(
+        check_register_collisions(&ptx),
+        "type conflict in register declarations"
+    );
+    assert!(
+        check_terminal_instruction(&ptx),
+        "missing ret or bra at function end"
+    );
 }

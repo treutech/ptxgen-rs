@@ -113,7 +113,7 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
     // Sort to warant tests determinism
     f32_regs.sort();
     s32_regs.sort();
-    pred_regs.sort();    
+    pred_regs.sort();
 
     let mut out = vec![];
     if !f32_regs.is_empty() {

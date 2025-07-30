@@ -16,8 +16,8 @@
 // limitations under the License.
 
 use assert_cmd::Command;
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 
 #[test]
 fn test_cli_saxpy_emits_ptx() {

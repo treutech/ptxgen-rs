@@ -1,0 +1,19 @@
+---
+source: crates/ptx_backend/tests/llvm_to_ptx_extra.rs
+expression: "run_test(\"conflict_type.ll\")"
+---
+// Function: main
+.version 7.0
+.target sm_75
+.address_size 64
+
+.reg .f32 %1, %val, %x;
+
+.entry main {
+entry:
+        // local stack allocation: x
+        st.global.f32 x, 1;
+        ld.global.f32 val, x;
+        // unhandled: BitCast(BitCast { operand: LocalOperand { name: Name("val"), ty: TypeRef(FPType(Single)) }, to_type: TypeRef(IntegerType { bits: 32 }), dest: Name("cast"), debugloc: None })
+    ret;
+}

@@ -25,14 +25,14 @@ fn test_generated_ptx_is_valid_for_nvcc() {
 
     Command::cargo_bin("ptx-backend")
         .unwrap()
-        .args([
-            "--emit",
-            "examples/minimal_ret.ll"
-        ])
+        .args(["--emit", "examples/minimal_ret.ll"])
         .assert()
         .success();
 
-    assert!(Path::new(output_path).exists(), "PTX file was not generated");
+    assert!(
+        Path::new(output_path).exists(),
+        "PTX file was not generated"
+    );
 
     let nvcc_status = std::process::Command::new("nvcc")
         .args(["-arch=sm_75", "-cubin", output_path, "-o", "/dev/null"])
