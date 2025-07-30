@@ -90,7 +90,11 @@ fn validate_structural_rules() {
             .basic_blocks
             .into_iter()
             .map(|block| {
-                let instrs = block.instrs.iter().map(lower).collect::<Vec<_>>();
+                let instrs = block
+                    .instrs
+                    .iter()
+                    .map(|instr| lower(&func.name, instr))
+                    .collect::<Vec<_>>();
                 (block.name.to_string(), instrs)
             })
             .collect::<Vec<_>>();

@@ -18,44 +18,52 @@
 use ir_model::Instruction;
 use llvm_ir::instruction::Instruction as LlvmInst;
 
-pub fn lower(instr: &LlvmInst) -> Instruction {
+pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
     use LlvmInst::*;
     match instr {
         FMul(f) => Instruction::FMul {
+            function: function.to_string(),
             dst: f.dest.to_string(),
             lhs: f.operand0.to_string(),
             rhs: f.operand1.to_string(),
         },
         FAdd(f) => Instruction::FAdd {
+            function: function.to_string(),
             dst: f.dest.to_string(),
             lhs: f.operand0.to_string(),
             rhs: f.operand1.to_string(),
         },
         Load(l) => Instruction::Load {
+            function: function.to_string(),
             dst: l.dest.to_string(),
             src: l.address.to_string(),
         },
         Store(s) => Instruction::Store {
+            function: function.to_string(),
             dst: s.address.to_string(),
             value: s.value.to_string(),
         },
         Alloca(a) => Instruction::Alloca {
+            function: function.to_string(),
             dst: a.dest.to_string(),
             ty: format!("{:?}", a.allocated_type),
             align: a.alignment,
         },
         ICmp(cmp) => Instruction::ICmp {
+            function: function.to_string(),
             dst: cmp.dest.to_string(),
             op: format!("{:?}", cmp.predicate),
             lhs: cmp.operand0.to_string(),
             rhs: cmp.operand1.to_string(),
         },
         Add(add) => Instruction::Add {
+            function: function.to_string(),
             dst: add.dest.to_string(),
             lhs: add.operand0.to_string(),
             rhs: add.operand1.to_string(),
         },
         GetElementPtr(gep) => Instruction::GetElementPtr {
+            function: function.to_string(),
             dst: gep.dest.to_string(),
             base: gep.address.to_string(),
             index: gep
@@ -65,6 +73,9 @@ pub fn lower(instr: &LlvmInst) -> Instruction {
                 .collect::<Vec<_>>()
                 .join(", "),
         },
-        _ => Instruction::Unhandled(format!("{:?}", instr)),
+        _ => Instruction::Unhandled {
+            function: function.to_string(),
+            text: format!("{:?}", instr),
+        },
     }
 }

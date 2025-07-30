@@ -47,17 +47,17 @@ pub fn get_register_type(instr: &Instruction, name: &str) -> Option<&'static str
     let matches = |s: &str| clean_operand(s) == clean_operand(name);
 
     match instr {
-        FMul { dst, lhs, rhs } | FAdd { dst, lhs, rhs }
+        FMul { dst, lhs, rhs, .. } | FAdd { dst, lhs, rhs, .. }
             if matches(dst) || matches(lhs) || matches(rhs) =>
         {
             Some("f32")
         }
 
-        Load { dst, src } if matches(dst) || matches(src) => Some("f32"),
+        Load { dst, src, .. } if matches(dst) || matches(src) => Some("f32"),
 
-        Store { dst, value } if matches(dst) || matches(value) => Some("f32"),
+        Store { dst, value, .. } if matches(dst) || matches(value) => Some("f32"),
 
-        Add { dst, lhs, rhs } if matches(dst) || matches(lhs) || matches(rhs) => Some("s32"),
+        Add { dst, lhs, rhs, .. } if matches(dst) || matches(lhs) || matches(rhs) => Some("s32"),
 
         ICmp { lhs, rhs, .. } if matches(lhs) || matches(rhs) => Some("s32"),
 

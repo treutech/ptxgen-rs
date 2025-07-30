@@ -62,7 +62,7 @@ pub fn lower_function(
 
     if let Some(instr) = last_instr {
         match instr {
-            Instruction::Ret | Instruction::Br { .. } => {}
+            Instruction::Ret {..} | Instruction::Br { .. } => {}
             _ => output.push("    ret;".into()),
         }
     } else {
@@ -160,29 +160,29 @@ fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
 
 pub fn to_ptx(instr: &Instruction) -> String {
     match instr {
-        Instruction::FMul { dst, lhs, rhs } => format!(
+        Instruction::FMul { dst, lhs, rhs, .. } => format!(
             "    fmul.f32 {}, {}, {};",
             clean_operand(dst),
             clean_operand(lhs),
             clean_operand(rhs)
         ),
-        Instruction::FAdd { dst, lhs, rhs } => format!(
+        Instruction::FAdd { dst, lhs, rhs, .. } => format!(
             "    fadd.f32 {}, {}, {};",
             clean_operand(dst),
             clean_operand(lhs),
             clean_operand(rhs)
         ),
-        Instruction::Load { dst, src } => format!(
+        Instruction::Load { dst, src, .. } => format!(
             "    ld.global.f32 {}, {};",
             clean_operand(dst),
             clean_operand(src)
         ),
-        Instruction::Store { dst, value } => format!(
+        Instruction::Store { dst, value, .. } => format!(
             "    st.global.f32 {}, {};",
             clean_operand(dst),
             clean_operand(value)
         ),
-        Instruction::Add { dst, lhs, rhs } => format!(
+        Instruction::Add { dst, lhs, rhs, .. } => format!(
             "    add.s32 {}, {}, {};",
             clean_operand(dst),
             clean_operand(lhs),
@@ -198,6 +198,7 @@ pub fn to_ptx(instr: &Instruction) -> String {
             cond,
             target_true,
             target_false,
+            ..
         } => match (cond, target_false) {
             (Some(c), Some(f)) => format!(
                 "    @{} bra {};\n    bra {};",
@@ -208,16 +209,18 @@ pub fn to_ptx(instr: &Instruction) -> String {
             (None, _) => format!("    bra {};", target_true),
             _ => "// invalid conditional branch".into(),
         },
-        Instruction::Ret => "    ret;".to_string(),
+        Instruction::Ret { .. } => "    ret;".to_string(),
         Instruction::Alloca { dst, .. } => {
             format!("    // local stack allocation: {}", clean_operand(dst))
         }
-        Instruction::GetElementPtr { dst, base, index } => format!(
+        Instruction::GetElementPtr {
+            dst, base, index, ..
+        } => format!(
             "    // address calc: {} = {}[{}]",
             clean_operand(dst),
             clean_operand(base),
             clean_operand(index)
         ),
-        Instruction::Unhandled(s) => format!("    // unhandled: {}", s),
+        Instruction::Unhandled { text, .. } => format!("    // unhandled: {}", text),
     }
 }

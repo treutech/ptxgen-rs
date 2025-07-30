@@ -45,7 +45,11 @@ fn main() {
             .iter()
             .map(|bb| {
                 let name = format!("{}", bb.name); // convierte Name a String
-                let lowered = bb.instrs.iter().map(llvm_parser::convert::lower).collect();
+                let lowered = bb
+                    .instrs
+                    .iter()
+                    .map(|instr| llvm_parser::convert::lower(&func.name, instr))
+                    .collect();
                 (name, lowered)
             })
             .collect::<Vec<_>>();

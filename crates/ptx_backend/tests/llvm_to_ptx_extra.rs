@@ -15,8 +15,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use llvm_parser::parse_module::parse_module;
 use ir_model::Instruction;
+use llvm_parser::parse_module::parse_module;
 
 fn run_test(filename: &str) -> String {
     use llvm_parser::convert::lower;
@@ -34,11 +34,15 @@ fn run_test(filename: &str) -> String {
             .basic_blocks
             .into_iter()
             .map(|block| {
-                let instrs = block.instrs.iter().map(lower).collect::<Vec<_>>();
+                let instrs = block
+                    .instrs
+                    .iter()
+                    .map(|instr| lower(&func.name, instr))
+                    .collect::<Vec<_>>();
                 (block.name.to_string(), instrs)
             })
             .collect();
-        
+
         for line in lower_function(&func.name, &all_instrs, "sm_75") {
             output.push_str(&format!("{}\n", line));
         }

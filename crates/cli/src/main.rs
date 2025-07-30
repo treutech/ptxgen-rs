@@ -40,7 +40,7 @@ fn main() -> Result<()> {
         for block in &func.basic_blocks {
             println!("  Basic block: {}", block.name);
             for instr in &block.instrs {
-                let lowered: Instruction = lower(instr);
+                let lowered: Instruction = lower(&func.name, instr);
                 println!("    {:?}", lowered);
             }
         }

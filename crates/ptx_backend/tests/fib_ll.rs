@@ -40,7 +40,12 @@ fn test_fib_ptx_output() {
 
         for block in &func.basic_blocks {
             actual.push_str(&format!("// Block: {}\n", block.name));
-            instrs.extend(block.instrs.iter().map(llvm_parser::convert::lower));
+            instrs.extend(
+                block
+                    .instrs
+                    .iter()
+                    .map(|i| llvm_parser::convert::lower(&func.name, i)),
+            );
         }
 
         let instr_refs: Vec<&_> = instrs.iter().collect();

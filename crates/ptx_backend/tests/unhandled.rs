@@ -22,11 +22,15 @@ use ptx_backend::{declare_registers, to_ptx};
 fn test_unhandled_instruction_output() {
     let instrs = vec![
         Instruction::Alloca {
+            function: "test".into(),
             dst: "%i".into(),
             ty: "i32".into(),
             align: 0,
         },
-        Instruction::Unhandled("foobar %a, %b".into()),
+        Instruction::Unhandled {
+            function: "test".into(),
+            text: "foobar %a, %b".into(),
+        },
     ];
 
     let mut actual = String::new();
