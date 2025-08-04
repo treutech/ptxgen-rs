@@ -20,9 +20,10 @@ use std::fs;
 use std::path::PathBuf;
 
 #[test]
-fn test_cli_saxpy_emits_ptx() {
+fn test_cli_saxpy_to_ptx() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
+        .join("tests")
+        .join("inputs")
         .join("saxpy.ll");
 
     assert!(path.exists(), "LLVM input file not found: {:?}", path);

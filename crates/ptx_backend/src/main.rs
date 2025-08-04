@@ -44,12 +44,15 @@ fn main() {
             .basic_blocks
             .iter()
             .map(|bb| {
-                let name = format!("{}", bb.name); // convierte Name a String
-                let lowered = bb
+                let name = format!("{}", bb.name);
+                let mut lowered = bb
                     .instrs
                     .iter()
                     .map(|instr| llvm_parser::convert::lower(&func.name, instr))
-                    .collect();
+                    .collect::<Vec<_>>();
+
+                lowered.push(llvm_parser::convert::lower_terminator(&func.name, &bb.term));
+
                 (name, lowered)
             })
             .collect::<Vec<_>>();
@@ -60,4 +63,5 @@ fn main() {
         }
         writeln!(output).unwrap(); // separación entre funciones
     }
+
 }

@@ -19,10 +19,11 @@ use llvm_parser::parse_module::parse_module;
 use ptx_backend::{declare_registers, to_ptx};
 
 #[test]
-fn test_fib_ptx_output() {
+fn test_dot_to_ptx() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
-        .join("fib.ll");
+        .join("tests")
+        .join("inputs")
+        .join("dot.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");
 
@@ -53,11 +54,11 @@ fn test_fib_ptx_output() {
         actual.push_str(&format!(".entry {} {{\n", func.name));
 
         for instr in &instrs {
-            actual.push_str(&format!("    {}\n", to_ptx(instr)));
+            actual.push_str(&format!("    {}\n", to_ptx(instr, &instr_refs)));
         }
 
         actual.push_str("}\n\n");
     }
 
-    insta::assert_snapshot!("fib_ptx", actual);
+    insta::assert_snapshot!("dot_to_ptx", actual);
 }

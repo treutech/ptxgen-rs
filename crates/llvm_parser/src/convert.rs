@@ -79,3 +79,30 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
         },
     }
 }
+
+use llvm_ir::Terminator;
+
+pub fn lower_terminator(func: &str, term: &Terminator) -> Instruction {
+    match term {
+        Terminator::Ret(_) => Instruction::Ret {
+            function: func.to_string(),
+        },
+        Terminator::Br(br) => Instruction::Br {
+            function: func.to_string(),
+            cond: None,
+            target_true: br.dest.to_string(),
+            target_false: None,
+        },
+        Terminator::CondBr(br) => Instruction::Br {
+            function: func.to_string(),
+            cond: Some(format!("{}", br.condition)),
+            target_true: br.true_dest.to_string(),
+            target_false: Some(br.false_dest.to_string()),
+        },
+        _ => Instruction::Unhandled {
+            function: func.to_string(),
+            text: format!("{:?}", term),
+        },
+    }
+}
+

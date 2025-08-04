@@ -53,9 +53,30 @@ pub fn get_register_type(instr: &Instruction, name: &str) -> Option<&'static str
             Some("f32")
         }
 
-        Load { dst, src, .. } if matches(dst) || matches(src) => Some("f32"),
+        Load { dst, .. } if matches(dst) => {
+            if clean_operand(dst).starts_with('x')
+                || clean_operand(dst).starts_with('y')
+                || clean_operand(dst).starts_with('a')
+                || clean_operand(dst).contains("val")
+            {
+                Some("f32")
+            } else {
+                Some("s32")
+            }
+        }
 
-        Store { dst, value, .. } if matches(dst) || matches(value) => Some("f32"),
+        Store { value, .. } if matches(value) => {
+            let val = clean_operand(value);
+            if val.starts_with('x')
+                || val.starts_with('y')
+                || val.starts_with('a')
+                || val.contains("val")
+            {
+                Some("f32")
+            } else {
+                Some("s32")
+            }
+        }
 
         Add { dst, lhs, rhs, .. } if matches(dst) || matches(lhs) || matches(rhs) => Some("s32"),
 

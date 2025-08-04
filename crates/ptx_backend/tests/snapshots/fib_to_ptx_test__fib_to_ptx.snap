@@ -1,0 +1,35 @@
+---
+source: crates/ptx_backend/tests/fib_to_ptx_test.rs
+expression: actual
+---
+.version 7.0
+.target sm_75
+.address_size 64
+
+// Function: fib
+// Block: %entry
+// Block: %loop
+// Block: %body
+// Block: %exit
+.reg .s32 %0, %1, %aval, %bval, %idx, %n, %next, %out, %out_, %out__offset, %sum, %x, %y;
+.reg .pred %cond;
+.entry fib {
+    .local .s32 a;
+    .local .s32 b;
+    .local .s32 i;
+    st.global.s32 [%a], %0;
+    st.global.s32 [%b], %1;
+    st.global.s32 [%i], %0;
+    ld.global.s32 %idx, [i];
+    setp.lt.s32 %cond, %idx, %n;
+    ld.global.f32 %aval, [a];
+    mul.lo.s32 %out__offset, %idx, 4;
+    add.s32 %out_, %out, %out__offset;
+    st.global.f32 [%out_], %aval;
+    ld.global.f32 %bval, [b];
+    add.s32 %sum, %aval, %bval;
+    st.global.f32 [%a], %bval;
+    st.global.s32 [%b], %sum;
+    add.s32 %next, %idx, %1;
+    st.global.s32 [%i], %next;
+}

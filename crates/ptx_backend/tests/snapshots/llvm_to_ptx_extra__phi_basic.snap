@@ -7,9 +7,10 @@ expression: "run_test(\"phi_basic.ll\")"
 .target sm_75
 .address_size 64
 
-
 .entry main {
+.reg .s32 %out, %x, %y;
+
 merge:
-        // unhandled: Phi(Phi { incoming_values: [(ConstantOperand(ConstantRef(Int { bits: 32, value: 1 })), Name("a")), (ConstantOperand(ConstantRef(Int { bits: 32, value: 2 })), Name("b"))], dest: Name("val"), to_type: TypeRef(IntegerType { bits: 32 }), debugloc: None })
+    // unhandled: Phi(Phi { incoming_values: [(ConstantOperand(ConstantRef(Int { bits: 32, value: 1 })), Name("a")), (ConstantOperand(ConstantRef(Int { bits: 32, value: 2 })), Name("b"))], dest: Name("val"), to_type: TypeRef(IntegerType { bits: 32 }), debugloc: None })
     ret;
 }

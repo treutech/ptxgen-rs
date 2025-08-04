@@ -19,16 +19,17 @@ use llvm_parser::parse_module::parse_module;
 use ptx_backend::{declare_registers, to_ptx};
 
 #[test]
-fn test_dot_ptx_output() {
+fn test_add_to_ptx() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
-        .join("dot.ll");
+        .join("tests")
+        .join("inputs")
+        .join("add.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");
 
     let mut actual = String::new();
 
-    // Emit global header once
+    // Emit global header
     actual.push_str(".version 7.0\n");
     actual.push_str(".target sm_75\n");
     actual.push_str(".address_size 64\n\n");
@@ -53,11 +54,11 @@ fn test_dot_ptx_output() {
         actual.push_str(&format!(".entry {} {{\n", func.name));
 
         for instr in &instrs {
-            actual.push_str(&format!("    {}\n", to_ptx(instr)));
+            actual.push_str(&format!("    {}\n", to_ptx(instr, &instr_refs)));
         }
 
         actual.push_str("}\n\n");
     }
 
-    insta::assert_snapshot!("dot_ptx", actual);
+    insta::assert_snapshot!("add_to_ptx", actual);
 }

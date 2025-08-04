@@ -8,7 +8,8 @@ expression: actual
 
 // Function: test
 // Block: entry
+.reg .s32 %out, %x, %y;
 .entry test {
-        // local stack allocation: i
-        // unhandled: foobar %a, %b
+    .local .s32 i;
+    // unhandled: foobar %a, %b
 }

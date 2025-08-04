@@ -110,7 +110,9 @@ impl Instruction {
             Store { dst, value, .. } => vec![dst, value],
 
             Alloca { dst, .. } => vec![dst],
-            GetElementPtr { dst, base, index, .. } => vec![dst, base, index],
+            GetElementPtr {
+                dst, base, index, ..
+            } => vec![dst, base, index],
 
             Unhandled { text, .. } => vec![text],
             _ => vec![],

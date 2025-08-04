@@ -16,15 +16,16 @@
 // limitations under the License.
 
 use ir_model::Instruction;
+use llvm_parser::convert::lower;
 use llvm_parser::parse_module::parse_module;
+use ptx_backend::lower_function;
 
 fn run_test(filename: &str) -> String {
-    use llvm_parser::convert::lower;
-    use ptx_backend::lower_function;
-
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
+        .join("tests")
+        .join("inputs")
         .join(filename);
+
     let module = parse_module(&path).expect("Failed to parse module");
 
     let mut output = String::new();

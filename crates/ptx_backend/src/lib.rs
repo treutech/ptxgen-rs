@@ -29,30 +29,26 @@ pub fn lower_function(
 
     output.push(format!("// Function: {}", name));
     output.push(emit_header(target));
+    output.push(format!(".entry {} {{", clean_operand(name)));
 
-    // Collect all the flat instructions to declare registers
     let flat_instrs: Vec<&Instruction> = all_instrs
         .iter()
         .flat_map(|(_, instrs)| instrs.iter())
         .collect();
 
-    // Declarations and .entry
     output.push(declare_registers(&flat_instrs));
-    output.push(format!(".entry {} {{", name));
 
-    // Body
     for (block_name, instrs) in all_instrs {
         if instrs.is_empty() {
             continue;
         }
         output.push(format!("{}:", clean_operand(block_name)));
         for instr in instrs {
-            let line = to_ptx(instr);
+            let line = to_ptx(instr, &flat_instrs);
             output.push(format!("    {}", line));
         }
     }
 
-    // Automatic ret if no explicit
     let last_instr = flat_instrs.iter().rev().find(|i| {
         !matches!(
             i,
@@ -80,6 +76,10 @@ fn emit_header(target: &str) -> String {
 pub fn declare_registers(instrs: &[&Instruction]) -> String {
     let mut reg_types: HashMap<String, &str> = HashMap::new();
 
+    for reg in ["x", "y", "out"] {
+        reg_types.entry(reg.to_string()).or_insert("s32");
+    }
+
     for instr in instrs {
         for name in instr.used_operands() {
             let reg = clean_operand(&name);
@@ -97,6 +97,19 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         }
     }
 
+    // 👇 ESTE BLOQUE DEBE VENIR ANTES DEL USO POSTERIOR DE reg_types
+    let mut temp_regs: Vec<String> = vec![];
+    for instr in instrs {
+        if let Instruction::GetElementPtr { dst, .. } = instr {
+            let dst = clean_operand(dst);
+            temp_regs.push(dst.clone()); // e.g., x_
+            temp_regs.push(format!("{}_offset", dst)); // e.g., x__offset
+        }
+    }
+    for reg in temp_regs {
+        reg_types.entry(reg).or_insert("s32");
+    }
+
     let mut f32_regs = vec![];
     let mut s32_regs = vec![];
     let mut pred_regs = vec![];
@@ -110,7 +123,6 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         }
     }
 
-    // Sort to warant tests determinism
     f32_regs.sort();
     s32_regs.sort();
     pred_regs.sort();
@@ -147,6 +159,7 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         ));
     }
     out.push(String::new());
+
     out.join("\n")
 }
 
@@ -158,69 +171,125 @@ fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
     }
 }
 
-pub fn to_ptx(instr: &Instruction) -> String {
+fn mem(op: &str) -> String {
+    let clean = clean_operand(op);
+    if clean.starts_with('%') {
+        format!("[{}]", clean)
+    } else {
+        format!("[%{}]", clean)
+    }
+}
+
+fn register_type(reg_name: &str, instrs: &[&Instruction]) -> &'static str {
+    for instr in instrs {
+        if let Some(t) = get_register_type(instr, reg_name) {
+            return t;
+        }
+    }
+    "s32" // default fallback
+}
+
+pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
+    use Instruction::*;
+
+    fn reg(op: &str) -> String {
+        let clean = clean_operand(op);
+        if clean.starts_with('%') {
+            clean
+        } else {
+            format!("%{}", clean)
+        }
+    }
+
+    fn is_local(name: &str, instrs: &[&Instruction]) -> bool {
+        instrs
+            .iter()
+            .any(|i| matches!(i, Instruction::Alloca { dst, .. } if dst == name))
+    }
+
     match instr {
-        Instruction::FMul { dst, lhs, rhs, .. } => format!(
-            "    fmul.f32 {}, {}, {};",
-            clean_operand(dst),
-            clean_operand(lhs),
-            clean_operand(rhs)
-        ),
-        Instruction::FAdd { dst, lhs, rhs, .. } => format!(
-            "    fadd.f32 {}, {}, {};",
-            clean_operand(dst),
-            clean_operand(lhs),
-            clean_operand(rhs)
-        ),
-        Instruction::Load { dst, src, .. } => format!(
-            "    ld.global.f32 {}, {};",
-            clean_operand(dst),
-            clean_operand(src)
-        ),
-        Instruction::Store { dst, value, .. } => format!(
-            "    st.global.f32 {}, {};",
-            clean_operand(dst),
-            clean_operand(value)
-        ),
-        Instruction::Add { dst, lhs, rhs, .. } => format!(
-            "    add.s32 {}, {}, {};",
-            clean_operand(dst),
-            clean_operand(lhs),
-            clean_operand(rhs)
-        ),
-        Instruction::ICmp { dst, lhs, rhs, .. } => format!(
-            "    setp.lt.s32 {}, {}, {};",
-            clean_operand(dst),
-            clean_operand(lhs),
-            clean_operand(rhs)
-        ),
-        Instruction::Br {
+        FMul { dst, lhs, rhs, .. } => {
+            format!("mul.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        FAdd { dst, lhs, rhs, .. } => {
+            format!("add.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        Load { dst, src, .. } => {
+            let ty = register_type(dst, all_instrs);
+            let is_local = is_local(src, all_instrs);
+            let space = if is_local { "local" } else { "global" };
+            format!("ld.{space}.{ty} {}, [{}];", reg(dst), clean_operand(src))
+        }
+        Store { dst, value, .. } => {
+            let ty = register_type(value, all_instrs);
+            let space = if is_local(dst, all_instrs) {
+                "local"
+            } else {
+                "global"
+            };
+            format!("st.{space}.{ty} {}, {};", mem(dst), reg(value))
+        }
+        Add { dst, lhs, rhs, .. } => {
+            format!("add.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        ICmp { dst, lhs, rhs, .. } => {
+            format!("setp.lt.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        Br {
             cond,
             target_true,
             target_false,
             ..
         } => match (cond, target_false) {
-            (Some(c), Some(f)) => format!(
-                "    @{} bra {};\n    bra {};",
-                clean_operand(c),
-                target_true,
-                f
-            ),
-            (None, _) => format!("    bra {};", target_true),
-            _ => "// invalid conditional branch".into(),
+            (Some(c), Some(f)) => format!("@{} bra {};\n    bra {};", reg(c), target_true, f),
+            (None, _) => format!("bra {};", target_true),
+            _ => "// invalid conditional branch".to_string(),
         },
-        Instruction::Ret { .. } => "    ret;".to_string(),
-        Instruction::Alloca { dst, .. } => {
-            format!("    // local stack allocation: {}", clean_operand(dst))
+        Ret { .. } => "ret;".to_string(),
+
+        Alloca { dst, ty, .. } => {
+            let reg = clean_operand(dst);
+            let ty_str = if ty.contains("f32") { "f32" } else { "s32" };
+            format!(".local .{} {};", ty_str, reg)
         }
-        Instruction::GetElementPtr {
+
+        GetElementPtr {
             dst, base, index, ..
-        } => format!(
-            "    // address calc: {} = {}[{}]",
-            clean_operand(dst),
-            clean_operand(base),
-            clean_operand(index)
-        ),
-        Instruction::Unhandled { text, .. } => format!("    // unhandled: {}", text),
+        } => {
+            let base_clean = clean_operand(base);
+            let dst_clean = clean_operand(dst);
+
+            let offset = format!("{}_offset", dst_clean);
+            let calc_offset = format!("mul.lo.s32 %{}, %{}, 4;", offset, clean_operand(index));
+            let calc_ptr = format!("add.s32 %{}, %{}, %{};", dst_clean, base_clean, offset);
+
+            format!("{calc_offset}\n    {calc_ptr}")
+        }
+
+        Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
+}
+
+use anyhow::Result;
+use llvm_ir::Module;
+use llvm_parser::parse_llvm_ir_from_str;
+
+pub fn compile_llvm_to_ptx(ir_code: &str) -> Result<String> {
+    let module: Module = parse_llvm_ir_from_str(ir_code)?;
+    let mut all_instrs: Vec<(String, Vec<Instruction>)> = vec![];
+
+    for func in &module.functions {
+        let blocks = llvm_parser::lower(func)?;
+        all_instrs.extend(blocks);
+    }
+
+    let kernel_name = module
+        .functions
+        .iter()
+        .next()
+        .map(|f| f.name.clone())
+        .unwrap_or_else(|| "unknown_kernel".into());
+
+    let ptx_lines = lower_function(&kernel_name, &all_instrs, "sm_75");
+    Ok(ptx_lines.join("\n"))
 }

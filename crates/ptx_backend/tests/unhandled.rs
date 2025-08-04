@@ -47,7 +47,7 @@ fn test_unhandled_instruction_output() {
     actual.push_str(".entry test {\n");
 
     for instr in &instrs {
-        actual.push_str(&format!("    {}\n", to_ptx(instr)));
+        actual.push_str(&format!("    {}\n", to_ptx(instr, &instr_refs)));
     }
 
     actual.push_str("}\n");

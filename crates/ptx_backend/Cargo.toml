@@ -13,6 +13,8 @@ ir-model = { path = "../ir_model" }
 llvm-parser = { path = "../llvm_parser" }
 clap = { version = "4.5.41", features = ["derive"] }
 assert_cmd = "2.0.17"
+anyhow = "1.0.98"
+llvm-ir = "0.11.3"
 
 [[bin]]
 name = "ptx-backend"

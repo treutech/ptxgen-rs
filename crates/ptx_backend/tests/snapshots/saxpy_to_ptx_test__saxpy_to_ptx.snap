@@ -1,0 +1,40 @@
+---
+source: crates/ptx_backend/tests/saxpy_to_ptx_test.rs
+expression: actual
+---
+.version 7.0
+.target sm_75
+.address_size 64
+
+// Function: saxpy
+.version 7.0
+.target sm_75
+.address_size 64
+
+.entry saxpy {
+.reg .f32 %a, %ax, %xval, %yval;
+.reg .s32 %0, %1, %idx, %n, %next, %out, %out_, %out__offset, %res, %x, %x_, %x__offset, %y, %y_, %y__offset;
+.reg .pred %cmp;
+
+entry:
+    .local .s32 i;
+    st.global.s32 [%i], %0;
+loop:
+    ld.global.s32 %idx, [i];
+    setp.lt.s32 %cmp, %idx, %n;
+body:
+    mul.lo.s32 %x__offset, %idx, 4;
+    add.s32 %x_, %x, %x__offset;
+    mul.lo.s32 %y__offset, %idx, 4;
+    add.s32 %y_, %y, %y__offset;
+    mul.lo.s32 %out__offset, %idx, 4;
+    add.s32 %out_, %out, %out__offset;
+    ld.global.f32 %xval, [x_];
+    ld.global.f32 %yval, [y_];
+    mul.f32 %ax, %a, %xval;
+    add.f32 %res, %ax, %yval;
+    st.global.f32 [%out_], %res;
+    add.s32 %next, %idx, %1;
+    st.global.s32 [%i], %next;
+    ret;
+}

@@ -78,7 +78,8 @@ fn check_terminal_instruction(ptx: &str) -> bool {
 #[test]
 fn validate_structural_rules() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
+        .join("tests")
+        .join("inputs")
         .join("saxpy.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");

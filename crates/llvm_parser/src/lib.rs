@@ -19,9 +19,28 @@ pub mod convert;
 pub mod parse_module;
 
 use anyhow::Result;
-use llvm_ir::Module;
+use llvm_ir::{Function, Module};
+use ir_model::Instruction;
 
 pub fn parse_llvm_ir_from_str(ir: &str) -> Result<Module> {
     let module = Module::from_ir_str(ir).map_err(anyhow::Error::msg)?;
     Ok(module)
 }
+
+pub fn lower(func: &Function) -> Result<Vec<(String, Vec<Instruction>)>> {
+    let mut blocks = vec![];
+    for block in &func.basic_blocks {
+        let mut instrs = vec![];
+
+        for instr in &block.instrs {
+            instrs.push(convert::lower(&func.name, instr));
+        }
+
+        // 👇 Esta parte es clave: también baja el terminator
+        instrs.push(convert::lower_terminator(&func.name, &block.term));
+
+        blocks.push((block.name.to_string(), instrs));
+    }
+    Ok(blocks)
+}
+

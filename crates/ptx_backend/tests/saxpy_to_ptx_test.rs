@@ -15,21 +15,25 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use insta::assert_snapshot;
 use llvm_parser::parse_module::parse_module;
 use ptx_backend::lower_function;
-use insta::assert_snapshot;
-
 
 #[test]
-fn test_saxpy_ptx_output() {
+fn test_saxpy_to_ptx() {
     let path = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("examples")
+        .join("tests")
+        .join("inputs")
         .join("saxpy.ll");
 
     let module = parse_module(&path).expect("Failed to parse module");
 
     let mut actual = String::new();
-    actual.push_str(".version 7.0\n.target sm_75\n.address_size 64\n\n");
+
+    // Emit global header
+    actual.push_str(".version 7.0\n");
+    actual.push_str(".target sm_75\n");
+    actual.push_str(".address_size 64\n\n");
 
     for func in module.functions {
         let instrs = func
@@ -53,5 +57,5 @@ fn test_saxpy_ptx_output() {
         actual.push('\n');
     }
 
-    assert_snapshot!("saxpy_ptx", actual);
+    assert_snapshot!("saxpy_to_ptx", actual);
 }
