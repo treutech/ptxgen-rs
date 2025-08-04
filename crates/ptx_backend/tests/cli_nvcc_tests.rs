@@ -71,4 +71,10 @@ fn test_dot_ptx_compiles() {
 fn test_saxpy_ptx_compiles() {
     run_nvcc_smoke_test("saxpy.ll");
 }
+
+#[test]
+fn test_phi_ptx_generates() {
+    run_nvcc_smoke_test("phi.ll");
+}
+
 */

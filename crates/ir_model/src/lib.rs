@@ -47,6 +47,11 @@ pub enum Instruction {
         lhs: String,
         rhs: String,
     },
+    Phi {
+        function: String,
+        dst: String,
+        incoming: Vec<(String, String)>,
+    },
     ICmp {
         function: String,
         dst: String,
@@ -89,6 +94,7 @@ impl Instruction {
             | Instruction::Add { function, .. }
             | Instruction::FAdd { function, .. }
             | Instruction::FMul { function, .. }
+            | Instruction::Phi { function, .. }
             | Instruction::ICmp { function, .. }
             | Instruction::GetElementPtr { function, .. }
             | Instruction::Alloca { function, .. }
@@ -113,6 +119,15 @@ impl Instruction {
             GetElementPtr {
                 dst, base, index, ..
             } => vec![dst, base, index],
+
+            Phi { dst, incoming, .. } => {
+                let mut v = vec![dst.as_str()];
+                for (label, val) in incoming {
+                    v.push(label);
+                    v.push(val);
+                }
+                v
+            }
 
             Unhandled { text, .. } => vec![text],
             _ => vec![],

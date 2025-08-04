@@ -180,7 +180,7 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
     s32_regs.push("loop".to_string());
     s32_regs.push("body".to_string());
     s32_regs.push("exit".to_string());
-    
+
     out.push(String::new());
 
     out.join("\n")
@@ -227,7 +227,7 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
     fn is_local(name: &str, instrs: &[&Instruction]) -> bool {
         instrs
             .iter()
-            .any(|i| matches!(i, Instruction::Alloca { dst, .. } if dst == name))
+            .any(|i| matches!(i, Alloca { dst, .. } if dst == name))
     }
 
     match instr {
@@ -282,7 +282,15 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             let calc_ptr = format!("add.s32 %{}, %{}, %{};", dst_clean, base_clean, offset);
             format!("{calc_offset}\n    {calc_ptr}")
         }
-        Alloca { .. } => String::new(), // ya lo declaraste en declare_registers()
+        Phi { dst, incoming, .. } => {
+            let incoming_str = incoming
+                .iter()
+                .map(|(label, val)| format!("[{}, {}]", reg(val), label))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("// phi node {} <- {}", reg(dst), incoming_str)
+        }
+        Alloca { .. } => String::new(),
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }

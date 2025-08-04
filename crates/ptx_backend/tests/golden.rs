@@ -50,3 +50,8 @@ fn golden_ret_only() {
     check_golden("ret_only");
 }
 
+#[test]
+fn golden_phi() {
+    check_golden("phi");
+}
+

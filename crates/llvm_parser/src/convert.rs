@@ -62,6 +62,24 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
             lhs: add.operand0.to_string(),
             rhs: add.operand1.to_string(),
         },
+        Phi(p) => Instruction::Phi {
+            function: function.to_string(),
+            dst: p.dest.to_string(),
+            incoming: p
+                .incoming_values
+                .iter()
+                .map(|(val, label)| {
+                    (
+                        match label {
+                            llvm_ir::Name::Name(s) => s.as_str().to_string(),
+                            llvm_ir::Name::Number(n) => format!("{}", n),
+                        },
+                        val.to_string(),
+                    )
+                })
+                .collect(),
+        },
+
         GetElementPtr(gep) => Instruction::GetElementPtr {
             function: function.to_string(),
             dst: gep.dest.to_string(),
@@ -105,4 +123,3 @@ pub fn lower_terminator(func: &str, term: &Terminator) -> Instruction {
         },
     }
 }
-
