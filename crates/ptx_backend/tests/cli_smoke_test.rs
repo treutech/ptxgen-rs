@@ -23,9 +23,14 @@ use std::path::Path;
 fn test_generated_ptx_is_valid_for_nvcc() {
     let output_path = "out.ptx";
 
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("inputs")
+        .join("minimal_ret.ll");
+
     Command::cargo_bin("ptx-backend")
         .unwrap()
-        .args(["examples/minimal_ret.ll", "--emit"])
+        .args([path.to_str().unwrap(), "--emit"]) 
         .assert()
         .success();
 

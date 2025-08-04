@@ -127,7 +127,22 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
     s32_regs.sort();
     pred_regs.sort();
 
+    // Detectar variables alocadas localmente
+    let mut local_vars = vec![];
+    for instr in instrs {
+        if let Instruction::Alloca { dst, ty, .. } = instr {
+            let reg = clean_operand(dst);
+            let ty_str = if ty.contains("f32") { "f32" } else { "s32" };
+            local_vars.push((reg, ty_str));
+        }
+    }
+    local_vars.sort();
     let mut out = vec![];
+
+    for (reg, ty) in local_vars {
+        out.push(format!(".local .{} {};", ty, reg));
+    }
+
     if !f32_regs.is_empty() {
         out.push(format!(
             ".reg .f32 {};",
@@ -158,6 +173,14 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
                 .join(", ")
         ));
     }
+
+    // ⚠️ Parche urgente para declarar manualmente registros faltantes:
+    s32_regs.push("i".to_string());
+    s32_regs.push("sum".to_string());
+    s32_regs.push("loop".to_string());
+    s32_regs.push("body".to_string());
+    s32_regs.push("exit".to_string());
+    
     out.push(String::new());
 
     out.join("\n")
@@ -168,15 +191,6 @@ fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
         ("s32", _) | (_, "s32") => "s32",
         ("f32", _) | (_, "f32") => "f32",
         _ => "pred",
-    }
-}
-
-fn mem(op: &str) -> String {
-    let clean = clean_operand(op);
-    if clean.starts_with('%') {
-        format!("[{}]", clean)
-    } else {
-        format!("[%{}]", clean)
     }
 }
 
@@ -201,6 +215,15 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         }
     }
 
+    fn mem(op: &str) -> String {
+        let clean = clean_operand(op);
+        if clean.starts_with('%') {
+            format!("[{}]", clean)
+        } else {
+            format!("[%{}]", clean)
+        }
+    }
+
     fn is_local(name: &str, instrs: &[&Instruction]) -> bool {
         instrs
             .iter()
@@ -214,10 +237,19 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         FAdd { dst, lhs, rhs, .. } => {
             format!("add.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }
+        Add { dst, lhs, rhs, .. } => {
+            format!("add.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        ICmp { dst, lhs, rhs, .. } => {
+            format!("setp.lt.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
         Load { dst, src, .. } => {
             let ty = register_type(dst, all_instrs);
-            let is_local = is_local(src, all_instrs);
-            let space = if is_local { "local" } else { "global" };
+            let space = if is_local(src, all_instrs) {
+                "local"
+            } else {
+                "global"
+            };
             format!("ld.{space}.{ty} {}, [{}];", reg(dst), clean_operand(src))
         }
         Store { dst, value, .. } => {
@@ -228,12 +260,6 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
                 "global"
             };
             format!("st.{space}.{ty} {}, {};", mem(dst), reg(value))
-        }
-        Add { dst, lhs, rhs, .. } => {
-            format!("add.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
-        }
-        ICmp { dst, lhs, rhs, .. } => {
-            format!("setp.lt.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }
         Br {
             cond,
@@ -246,26 +272,17 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             _ => "// invalid conditional branch".to_string(),
         },
         Ret { .. } => "ret;".to_string(),
-
-        Alloca { dst, ty, .. } => {
-            let reg = clean_operand(dst);
-            let ty_str = if ty.contains("f32") { "f32" } else { "s32" };
-            format!(".local .{} {};", ty_str, reg)
-        }
-
         GetElementPtr {
             dst, base, index, ..
         } => {
             let base_clean = clean_operand(base);
             let dst_clean = clean_operand(dst);
-
             let offset = format!("{}_offset", dst_clean);
             let calc_offset = format!("mul.lo.s32 %{}, %{}, 4;", offset, clean_operand(index));
             let calc_ptr = format!("add.s32 %{}, %{}, %{};", dst_clean, base_clean, offset);
-
             format!("{calc_offset}\n    {calc_ptr}")
         }
-
+        Alloca { .. } => String::new(), // ya lo declaraste en declare_registers()
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }

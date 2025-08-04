@@ -8,11 +8,12 @@ expression: "run_test(\"conflict_type.ll\")"
 .address_size 64
 
 .entry main {
+.local .s32 x;
 .reg .f32 %val;
 .reg .s32 %1, %out, %x, %y;
 
 entry:
-    .local .s32 x;
+    
     st.global.s32 [%x], %1;
     ld.global.f32 %val, [x];
     // unhandled: BitCast(BitCast { operand: LocalOperand { name: Name("val"), ty: TypeRef(FPType(Single)) }, to_type: TypeRef(IntegerType { bits: 32 }), dest: Name("cast"), debugloc: None })

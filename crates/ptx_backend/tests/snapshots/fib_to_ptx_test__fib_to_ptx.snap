@@ -11,12 +11,15 @@ expression: actual
 // Block: %loop
 // Block: %body
 // Block: %exit
+.local .s32 a;
+.local .s32 b;
+.local .s32 i;
 .reg .s32 %0, %1, %aval, %bval, %idx, %n, %next, %out, %out_, %out__offset, %sum, %x, %y;
 .reg .pred %cond;
 .entry fib {
-    .local .s32 a;
-    .local .s32 b;
-    .local .s32 i;
+    
+    
+    
     st.global.s32 [%a], %0;
     st.global.s32 [%b], %1;
     st.global.s32 [%i], %0;

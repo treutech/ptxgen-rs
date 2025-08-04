@@ -8,8 +8,9 @@ expression: actual
 
 // Function: test
 // Block: entry
+.local .s32 i;
 .reg .s32 %out, %x, %y;
 .entry test {
-    .local .s32 i;
+    
     // unhandled: foobar %a, %b
 }

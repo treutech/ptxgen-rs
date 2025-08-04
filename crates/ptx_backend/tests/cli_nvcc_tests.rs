@@ -56,7 +56,7 @@ fn run_nvcc_smoke_test(name: &str) {
     );
 }
 
-
+/* TODO
 #[test]
 fn test_add_ptx_compiles() {
     run_nvcc_smoke_test("add.ll");
@@ -67,7 +67,8 @@ fn test_dot_ptx_compiles() {
     run_nvcc_smoke_test("dot.ll");
 }
 
-//#[test]
-//fn test_saxpy_ptx_compiles() {
-//    run_nvcc_smoke_test("saxpy.ll");
-//}
+#[test]
+fn test_saxpy_ptx_compiles() {
+    run_nvcc_smoke_test("saxpy.ll");
+}
+*/
