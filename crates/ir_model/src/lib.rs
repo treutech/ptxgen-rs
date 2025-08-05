@@ -134,6 +134,13 @@ pub enum Instruction {
         lhs: String,
         rhs: String,
     },
+    FCmp {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+        op: String,
+    },
     Unhandled {
         function: String,
         text: String,
@@ -163,6 +170,7 @@ impl Instruction {
             | Instruction::SRem { function, .. }
             | Instruction::FDiv { function, .. }
             | Instruction::FRem { function, .. }
+            | Instruction::FCmp { function, .. }
             | Instruction::Unhandled { function, .. } => function,
         }
     }
@@ -171,7 +179,7 @@ impl Instruction {
         use Instruction::*;
 
         match self {
-            
+
             // Arithmetic 3 operands
             Add { dst, lhs, rhs, .. }
             | Sub { dst, lhs, rhs, .. }
@@ -185,7 +193,8 @@ impl Instruction {
             | FMul { dst, lhs, rhs, .. }
             | FDiv { dst, lhs, rhs, .. }
             | FRem { dst, lhs, rhs, .. }
-            | ICmp { dst, lhs, rhs, .. } => vec![dst, lhs, rhs],
+            | ICmp { dst, lhs, rhs, .. }
+            | FCmp { dst, lhs, rhs, .. } => vec![dst, lhs, rhs],
 
             // Load/Store
             Load { dst, src, .. } => vec![dst, src],

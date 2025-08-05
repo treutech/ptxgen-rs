@@ -269,8 +269,31 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         FRem { dst, lhs, rhs, .. } => {
             format!("rem.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }
-        ICmp { dst, lhs, rhs, .. } => {
-            format!("setp.lt.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        ICmp { dst, lhs, rhs, op, .. } => {
+            let pred = match op.as_str() {
+                "EQ" => "eq",
+                "NE" => "ne",
+                "UGT" | "SGT" => "gt",
+                "UGE" | "SGE" => "ge",
+                "ULT" | "SLT" => "lt",
+                "ULE" | "SLE" => "le",
+                _ => {
+                    return format!("// unsupported icmp predicate: {}", op);
+                }
+            };
+            format!("setp.{}.s32 {}, {}, {};", pred, reg(dst), reg(lhs), reg(rhs))
+        }
+        FCmp { dst, lhs, rhs, op, .. } => {
+            let pred = match op.as_str() {
+                "OEQ" | "UEQ" => "eq",
+                "ONE" | "UNE" => "ne",
+                "OGT" | "UGT" => "gt",
+                "OGE" | "UGE" => "ge",
+                "OLT" | "ULT" => "lt",
+                "OLE" | "ULE" => "le",
+                _ => "lt", // fallback
+            };
+            format!("setp.{}.f32 {}, {}, {};", pred, reg(dst), reg(lhs), reg(rhs))
         }
         Load { dst, src, .. } => {
             let ty = register_type(dst, all_instrs);

@@ -56,6 +56,13 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
             lhs: cmp.operand0.to_string(),
             rhs: cmp.operand1.to_string(),
         },
+        FCmp(cmp) => Instruction::FCmp {
+            function: function.to_string(),
+            dst: cmp.dest.to_string(),
+            op: format!("{:?}", cmp.predicate),
+            lhs: cmp.operand0.to_string(),
+            rhs: cmp.operand1.to_string(),
+        },
         Add(add) => Instruction::Add {
             function: function.to_string(),
             dst: add.dest.to_string(),

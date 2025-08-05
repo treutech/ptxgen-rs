@@ -70,6 +70,15 @@ fn golden_rem() {
     check_golden("rem");
 }
 
+#[test]
+fn golden_icmp() {
+    check_golden("icmp");
+}
+
+#[test]
+fn golden_fcmp() {
+    check_golden("fcmp");
+}
 
 #[test]
 fn golden_phi() {
