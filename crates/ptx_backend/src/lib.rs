@@ -378,6 +378,21 @@ pub fn compile_llvm_to_ptx(ir_code: &str) -> Result<String> {
         .map(|f| f.name.clone())
         .unwrap_or_else(|| "unknown_kernel".into());
 
+    // Count unhandled instructions
+    let flat_instrs: Vec<&Instruction> = all_instrs
+        .iter()
+        .flat_map(|(_, instrs)| instrs.iter())
+        .collect();
+
+    let unhandled_count = flat_instrs
+        .iter()
+        .filter(|i| matches!(i, Instruction::Unhandled { .. }))
+        .count();
+
+    if unhandled_count > 0 {
+        eprintln!("Warning: {unhandled_count} unhandled instruction(s) in {}", kernel_name);
+    }
+
     let ptx_lines = lower_function(&kernel_name, &all_instrs, "sm_75");
     Ok(ptx_lines.join("\n"))
 }

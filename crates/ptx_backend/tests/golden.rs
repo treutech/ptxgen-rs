@@ -105,8 +105,3 @@ fn golden_trunc() {
     check_golden("trunc");
 }
 
-
-
-
-
-
