@@ -85,3 +85,9 @@ fn golden_phi() {
     check_golden("phi");
 }
 
+#[test]
+fn golden_select() {
+    check_golden("select");
+}
+
+

@@ -141,6 +141,13 @@ pub enum Instruction {
         rhs: String,
         op: String,
     },
+    Select {
+        function: String,
+        dst: String,
+        cond: String,
+        val_true: String,
+        val_false: String,
+    },
     Unhandled {
         function: String,
         text: String,
@@ -171,6 +178,7 @@ impl Instruction {
             | Instruction::FDiv { function, .. }
             | Instruction::FRem { function, .. }
             | Instruction::FCmp { function, .. }
+            | Instruction::Select { function, .. }
             | Instruction::Unhandled { function, .. } => function,
         }
     }
@@ -179,7 +187,6 @@ impl Instruction {
         use Instruction::*;
 
         match self {
-
             // Arithmetic 3 operands
             Add { dst, lhs, rhs, .. }
             | Sub { dst, lhs, rhs, .. }
@@ -216,6 +223,16 @@ impl Instruction {
                     v.push(val);
                 }
                 v
+            }
+
+            Select {
+                dst,
+                cond,
+                val_true,
+                val_false,
+                ..
+            } => {
+                vec![dst, cond, val_true, val_false]
             }
 
             // Other

@@ -140,7 +140,13 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
                 })
                 .collect(),
         },
-
+        Select(sel) => Instruction::Select {
+            function: function.to_string(),
+            dst: sel.dest.to_string(),
+            cond: sel.condition.to_string(),
+            val_true: sel.true_value.to_string(),
+            val_false: sel.false_value.to_string(),
+        },
         GetElementPtr(gep) => Instruction::GetElementPtr {
             function: function.to_string(),
             dst: gep.dest.to_string(),

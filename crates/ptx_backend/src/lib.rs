@@ -174,7 +174,6 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         ));
     }
 
-    // ⚠️ Parche urgente para declarar manualmente registros faltantes:
     s32_regs.push("i".to_string());
     s32_regs.push("sum".to_string());
     s32_regs.push("loop".to_string());
@@ -343,6 +342,9 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             format!("// phi node {} <- {}", reg(dst), incoming_str)
         }
         Alloca { .. } => String::new(),
+        Select { dst, cond, val_true, val_false, .. } => {
+            format!("selp.s32 {}, {}, {}, {};", reg(dst), reg(val_true), reg(val_false), reg(cond))
+        }
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }
