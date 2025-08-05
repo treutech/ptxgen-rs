@@ -192,7 +192,7 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
                 target,
                 args: c.arguments.iter().map(|a| a.0.to_string()).collect(),
             }
-        }
+        },
         _ => Instruction::Unhandled {
             function: function.to_string(),
             text: format!("{:?}", instr),
@@ -207,17 +207,17 @@ pub fn lower_terminator(func: &str, term: &Terminator) -> Instruction {
         Terminator::Ret(_) => Instruction::Ret {
             function: func.to_string(),
         },
+        Terminator::CondBr(br) => Instruction::CondBr {
+            function: func.to_string(),
+            cond: format!("{}", br.condition),
+            then_target: br.true_dest.to_string(),
+            else_target: br.false_dest.to_string(),
+        },
         Terminator::Br(br) => Instruction::Br {
             function: func.to_string(),
             cond: None,
             target_true: br.dest.to_string(),
             target_false: None,
-        },
-        Terminator::CondBr(br) => Instruction::Br {
-            function: func.to_string(),
-            cond: Some(format!("{}", br.condition)),
-            target_true: br.true_dest.to_string(),
-            target_false: Some(br.false_dest.to_string()),
         },
         _ => Instruction::Unhandled {
             function: func.to_string(),

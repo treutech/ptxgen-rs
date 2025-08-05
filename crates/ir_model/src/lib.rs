@@ -77,6 +77,12 @@ pub enum Instruction {
         target_true: String,
         target_false: Option<String>,
     },
+    CondBr {
+        function: String,
+        cond: String,
+        then_target: String,
+        else_target: String,
+    },
     Ret {
         function: String,
     },
@@ -187,6 +193,7 @@ impl Instruction {
             | Instruction::GetElementPtr { function, .. }
             | Instruction::Alloca { function, .. }
             | Instruction::Br { function, .. }
+            | Instruction::CondBr { function, .. }
             | Instruction::Ret { function, .. }
             | Instruction::Sub { function, .. }
             | Instruction::FSub { function, .. }
@@ -202,7 +209,7 @@ impl Instruction {
             | Instruction::Bitcast { function, .. }
             | Instruction::ZExt { function, .. }
             | Instruction::Trunc { function, .. }
-            | Instruction::Call { function, .. } 
+            | Instruction::Call { function, .. }
             | Instruction::Unhandled { function, .. } => function,
         }
     }
@@ -259,12 +266,25 @@ impl Instruction {
                 vec![dst, cond, val_true, val_false]
             }
 
-            Bitcast { dst, src, .. } => { vec![dst, src] }
-            ZExt { dst, src, .. } => { vec![dst, src] }
-            Trunc { dst, src, .. } => { vec![dst, src] }
+            Bitcast { dst, src, .. } => {
+                vec![dst, src]
+            }
+            ZExt { dst, src, .. } => {
+                vec![dst, src]
+            }
+            Trunc { dst, src, .. } => {
+                vec![dst, src]
+            }
 
             Call { args, .. } => args.iter().map(|s| s.as_str()).collect(),
-            
+
+            CondBr {
+                cond,
+                then_target,
+                else_target,
+                ..
+            } => vec![cond, then_target, else_target],
+
             // Other
             Unhandled { text, .. } => vec![text],
             _ => vec![],

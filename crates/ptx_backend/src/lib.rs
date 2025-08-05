@@ -15,11 +15,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod utils;
 mod ptx_type;
+mod utils;
 
-use crate::utils::{clean_operand, get_register_type};
 use crate::ptx_type::PTXType;
+use crate::utils::{clean_operand, get_register_type};
 use ir_model::Instruction;
 use std::collections::HashMap;
 
@@ -258,7 +258,9 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         FRem { dst, lhs, rhs, .. } => {
             format!("rem.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }
-        ICmp { dst, lhs, rhs, op, .. } => {
+        ICmp {
+            dst, lhs, rhs, op, ..
+        } => {
             let pred = match op.as_str() {
                 "EQ" => "eq",
                 "NE" => "ne",
@@ -270,9 +272,17 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
                     return format!("// unsupported icmp predicate: {}", op);
                 }
             };
-            format!("setp.{}.s32 {}, {}, {};", pred, reg(dst), reg(lhs), reg(rhs))
+            format!(
+                "setp.{}.s32 {}, {}, {};",
+                pred,
+                reg(dst),
+                reg(lhs),
+                reg(rhs)
+            )
         }
-        FCmp { dst, lhs, rhs, op, .. } => {
+        FCmp {
+            dst, lhs, rhs, op, ..
+        } => {
             let pred = match op.as_str() {
                 "OEQ" | "UEQ" => "eq",
                 "ONE" | "UNE" => "ne",
@@ -282,7 +292,13 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
                 "OLE" | "ULE" => "le",
                 _ => "lt", // fallback
             };
-            format!("setp.{}.f32 {}, {}, {};", pred, reg(dst), reg(lhs), reg(rhs))
+            format!(
+                "setp.{}.f32 {}, {}, {};",
+                pred,
+                reg(dst),
+                reg(lhs),
+                reg(rhs)
+            )
         }
         Load { dst, src, .. } => {
             let ty = register_type(dst, all_instrs);
@@ -312,6 +328,19 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             (None, _) => format!("bra {};", target_true),
             _ => "// invalid conditional branch".to_string(),
         },
+        CondBr {
+            cond,
+            then_target,
+            else_target,
+            ..
+        } => {
+            format!(
+                "@{cond} bra {then};\n    bra {els};",
+                cond = reg(cond),
+                then = then_target,
+                els = else_target
+            )
+        }
         Ret { .. } => "ret;".to_string(),
         GetElementPtr {
             dst, base, index, ..
@@ -332,8 +361,20 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             format!("// phi node {} <- {}", reg(dst), incoming_str)
         }
         Alloca { .. } => String::new(),
-        Select { dst, cond, val_true, val_false, .. } => {
-            format!("selp.s32 {}, {}, {}, {};", reg(dst), reg(val_true), reg(val_false), reg(cond))
+        Select {
+            dst,
+            cond,
+            val_true,
+            val_false,
+            ..
+        } => {
+            format!(
+                "selp.s32 {}, {}, {}, {};",
+                reg(dst),
+                reg(val_true),
+                reg(val_false),
+                reg(cond)
+            )
         }
         Bitcast { dst, src, .. } => {
             format!("mov.b32 {}, {};", reg(dst), reg(src))
@@ -345,11 +386,7 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             format!("cvt.u8.u32 {}, {};", reg(dst), reg(src))
         }
         Call { target, args, .. } => {
-            let args_str = args
-                .iter()
-                .map(|a| reg(a))
-                .collect::<Vec<_>>()
-                .join(", ");
+            let args_str = args.iter().map(|a| reg(a)).collect::<Vec<_>>().join(", ");
             format!("call {}, ({});", clean_operand(target), args_str)
         }
         Unhandled { text, .. } => format!("// unhandled: {}", text),

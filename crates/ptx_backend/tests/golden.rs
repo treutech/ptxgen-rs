@@ -105,3 +105,14 @@ fn golden_trunc() {
     check_golden("trunc");
 }
 
+#[test]
+fn golden_branch_cond() {
+    check_golden("branch_cond");
+}
+
+#[test]
+fn golden_branch_uncond() {
+    check_golden("branch_uncond");
+}
+
+
