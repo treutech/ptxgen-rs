@@ -123,6 +123,17 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
             lhs: r.operand0.to_string(),
             rhs: r.operand1.to_string(),
         },
+        GetElementPtr(gep) => Instruction::GetElementPtr {
+            function: function.to_string(),
+            dst: gep.dest.to_string(),
+            base: gep.address.to_string(),
+            index: gep
+                .indices
+                .iter()
+                .map(|i| i.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        },
         Phi(p) => Instruction::Phi {
             function: function.to_string(),
             dst: p.dest.to_string(),
@@ -147,16 +158,20 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
             val_true: sel.true_value.to_string(),
             val_false: sel.false_value.to_string(),
         },
-        GetElementPtr(gep) => Instruction::GetElementPtr {
+        BitCast(bc) => Instruction::Bitcast {
             function: function.to_string(),
-            dst: gep.dest.to_string(),
-            base: gep.address.to_string(),
-            index: gep
-                .indices
-                .iter()
-                .map(|i| i.to_string())
-                .collect::<Vec<_>>()
-                .join(", "),
+            dst: bc.dest.to_string(),
+            src: bc.operand.to_string(),
+        },
+        ZExt(z) => Instruction::ZExt {
+            function: function.to_string(),
+            dst: z.dest.to_string(),
+            src: z.operand.to_string(),
+        },
+        Trunc(t) => Instruction::Trunc {
+            function: function.to_string(),
+            dst: t.dest.to_string(),
+            src: t.operand.to_string(),
         },
         _ => Instruction::Unhandled {
             function: function.to_string(),

@@ -90,4 +90,23 @@ fn golden_select() {
     check_golden("select");
 }
 
+#[test]
+fn golden_bitcast() {
+    check_golden("bitcast");
+}
+
+#[test]
+fn golden_zext() {
+    check_golden("zext");
+}
+
+#[test]
+fn golden_trunc() {
+    check_golden("trunc");
+}
+
+
+
+
+
 

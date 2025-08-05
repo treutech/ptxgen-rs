@@ -148,6 +148,21 @@ pub enum Instruction {
         val_true: String,
         val_false: String,
     },
+    Bitcast {
+        function: String,
+        dst: String,
+        src: String,
+    },
+    ZExt {
+        function: String,
+        dst: String,
+        src: String,
+    },
+    Trunc {
+        function: String,
+        dst: String,
+        src: String,
+    },
     Unhandled {
         function: String,
         text: String,
@@ -179,6 +194,9 @@ impl Instruction {
             | Instruction::FRem { function, .. }
             | Instruction::FCmp { function, .. }
             | Instruction::Select { function, .. }
+            | Instruction::Bitcast { function, .. }
+            | Instruction::ZExt { function, .. }
+            | Instruction::Trunc { function, .. }
             | Instruction::Unhandled { function, .. } => function,
         }
     }
@@ -234,6 +252,10 @@ impl Instruction {
             } => {
                 vec![dst, cond, val_true, val_false]
             }
+
+            Bitcast { dst, src, .. } => { vec![dst, src] }
+            ZExt { dst, src, .. } => { vec![dst, src] }
+            Trunc { dst, src, .. } => { vec![dst, src] }
 
             // Other
             Unhandled { text, .. } => vec![text],

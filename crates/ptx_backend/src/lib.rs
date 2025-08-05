@@ -345,6 +345,15 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         Select { dst, cond, val_true, val_false, .. } => {
             format!("selp.s32 {}, {}, {}, {};", reg(dst), reg(val_true), reg(val_false), reg(cond))
         }
+        Bitcast { dst, src, .. } => {
+            format!("mov.b32 {}, {};", reg(dst), reg(src))
+        }
+        ZExt { dst, src, .. } => {
+            format!("cvt.u32.u8 {}, {};", reg(dst), reg(src))
+        }
+        Trunc { dst, src, .. } => {
+            format!("cvt.u8.u32 {}, {};", reg(dst), reg(src))
+        }
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }
