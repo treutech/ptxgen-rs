@@ -171,8 +171,9 @@ pub enum Instruction {
     },
     Call {
         function: String,
-        target: String,
+        callee: String,
         args: Vec<String>,
+        ret: Option<String>,
     },
     Unhandled {
         function: String,
@@ -276,7 +277,14 @@ impl Instruction {
                 vec![dst, src]
             }
 
-            Call { args, .. } => args.iter().map(|s| s.as_str()).collect(),
+            // If `ret` is Some(x), then `x` will be assigned the return value of the call.
+            Call { args, ret, .. } => {
+                let mut ops: Vec<&str> = args.iter().map(|s| s.as_str()).collect();
+                if let Some(r) = ret.as_ref() {
+                    ops.push(r);
+                }
+                ops
+            }
 
             CondBr {
                 cond,

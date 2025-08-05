@@ -221,6 +221,27 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             .any(|i| matches!(i, Alloca { dst, .. } if dst == name))
     }
 
+    fn format_arg(arg: &str) -> String {
+        if arg.parse::<i32>().is_ok() || arg.parse::<f32>().is_ok() {
+            arg.to_string()
+        } else {
+            let clean = clean_operand(arg);
+            if clean.starts_with('%') {
+                clean
+            } else {
+                format!("%{}", clean)
+            }
+        }
+    }
+
+    fn extract_arg_name(arg: &str) -> String {
+        if arg.starts_with("i32 ") || arg.starts_with("f32 ") {
+            arg.split_whitespace().last().unwrap_or(arg).to_string()
+        } else {
+            arg.to_string()
+        }
+    }
+
     match instr {
         FMul { dst, lhs, rhs, .. } => {
             format!("mul.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
@@ -385,10 +406,51 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         Trunc { dst, src, .. } => {
             format!("cvt.u8.u32 {}, {};", reg(dst), reg(src))
         }
-        Call { target, args, .. } => {
-            let args_str = args.iter().map(|a| reg(a)).collect::<Vec<_>>().join(", ");
-            format!("call {}, ({});", clean_operand(target), args_str)
+        Call {
+            callee, args, ret, ..
+        } => {
+            let mut ptx = String::new();
+
+            if let Some(retvar) = ret {
+                ptx.push_str(&format!("\t.param .s32 retval_{};\n", retvar));
+            }
+
+            for (i, arg) in args.iter().enumerate() {
+                ptx.push_str(&format!("\t.param .s32 arg{i};\n"));
+                let arg_val = extract_arg_name(arg);
+                ptx.push_str(&format!(
+                    "\tst.param.b32 [arg{i}], {};\n",
+                    format_arg(&arg_val)
+                ));
+            }
+
+            let arg_params = (0..args.len())
+                .map(|i| format!("arg{i}"))
+                .collect::<Vec<_>>()
+                .join(", ");
+
+            if let Some(retvar) = ret {
+                ptx.push_str(&format!(
+                    "\tcall (retval_{retvar}) {}, ({});\n",
+                    clean_operand(callee),
+                    arg_params
+                ));
+                ptx.push_str(&format!(
+                    "\tld.param.s32 {}, [retval_{}];\n",
+                    reg(retvar),
+                    retvar
+                ));
+            } else {
+                ptx.push_str(&format!(
+                    "\tcall {}, ({});\n",
+                    clean_operand(callee),
+                    arg_params
+                ));
+            }
+
+            ptx
         }
+
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }

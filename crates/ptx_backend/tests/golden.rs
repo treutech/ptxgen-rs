@@ -115,4 +115,12 @@ fn golden_branch_uncond() {
     check_golden("branch_uncond");
 }
 
+#[test]
+fn golden_call_with_args() {
+    check_golden("call_with_args");
+}
 
+#[test]
+fn golden_multi_fn_call() {
+    check_golden("multi_fn_call");
+}

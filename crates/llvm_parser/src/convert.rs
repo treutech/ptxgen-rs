@@ -187,16 +187,31 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
                 _ => "unknown_fn".to_string(),
             };
 
+            let args = c
+                .arguments
+                .iter()
+                .map(|a| extract_operand_name(&a.0))
+                .collect();
+
             Instruction::Call {
                 function: function.to_string(),
-                target,
-                args: c.arguments.iter().map(|a| a.0.to_string()).collect(),
+                callee: target,
+                args,
+                ret: c.dest.clone().map(|n| n.to_string()),
             }
-        },
+        }
         _ => Instruction::Unhandled {
             function: function.to_string(),
             text: format!("{:?}", instr),
         },
+    }
+}
+
+fn extract_operand_name(op: &llvm_ir::Operand) -> String {
+    match op {
+        llvm_ir::Operand::LocalOperand { name, .. } => name.to_string(),
+        llvm_ir::Operand::ConstantOperand(c) => format!("{}", c),
+        _ => format!("{:?}", op), // Puedes refinar esto según tus casos esperados
     }
 }
 

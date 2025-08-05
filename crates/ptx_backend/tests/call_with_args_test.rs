@@ -23,9 +23,9 @@ const CALL_ARGS_LL: &str = include_str!("inputs/call_with_args.ll");
 fn test_call_with_args_translation() {
     let ptx = compile_llvm_to_ptx(CALL_ARGS_LL).expect("Compilation failed");
 
-    assert!(
-        ptx.contains("call foo, (%x, %y);"),
-        "Missing call with args:\n{}",
-        ptx
-    );
+    assert!(ptx.contains(".param .s32 arg0;"));
+    assert!(ptx.contains("st.param.b32 [arg0], %x;"));
+    assert!(ptx.contains(".param .s32 arg1;"));
+    assert!(ptx.contains("st.param.b32 [arg1], %y;"));
+    assert!(ptx.contains("call foo, (arg0, arg1);"));
 }
