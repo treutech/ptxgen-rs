@@ -13,8 +13,8 @@ expression: actual
 
 .entry saxpy {
 .local .s32 i;
-.reg .f32 %a, %ax, %xval, %yval;
-.reg .s32 %0, %1, %idx, %n, %next, %out, %out_, %out__offset, %res, %x, %x_, %x__offset, %y, %y_, %y__offset;
+.reg .f32 %a, %ax, %res, %xval, %yval;
+.reg .s32 %0, %1, %idx, %n, %next, %out, %out_, %out__offset, %x, %x_, %x__offset, %y, %y_, %y__offset;
 .reg .pred %cmp;
 
 entry:

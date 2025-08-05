@@ -16,7 +16,10 @@
 // limitations under the License.
 
 mod utils;
+mod ptx_type;
+
 use crate::utils::{clean_operand, get_register_type};
+use crate::ptx_type::PTXType;
 use ir_model::Instruction;
 use std::collections::HashMap;
 
@@ -74,19 +77,20 @@ fn emit_header(target: &str) -> String {
 }
 
 pub fn declare_registers(instrs: &[&Instruction]) -> String {
-    let mut reg_types: HashMap<String, &str> = HashMap::new();
+    let mut reg_types: HashMap<String, PTXType> = HashMap::new();
 
     for reg in ["x", "y", "out"] {
-        reg_types.entry(reg.to_string()).or_insert("s32");
+        reg_types.entry(reg.to_string()).or_insert(PTXType::S32);
     }
 
     for instr in instrs {
         for name in instr.used_operands() {
             let reg = clean_operand(&name);
-            if let Some(reg_type) = get_register_type(instr, &name) {
+            if let Some(reg_type_str) = get_register_type(instr, &name) {
+                let reg_type = PTXType::from_str(reg_type_str);
                 match reg_types.get(&reg) {
                     Some(&existing_type) if existing_type != reg_type => {
-                        reg_types.insert(reg.clone(), dominant_type(existing_type, reg_type));
+                        reg_types.insert(reg.clone(), existing_type.dominant_with(reg_type));
                     }
                     None => {
                         reg_types.insert(reg.clone(), reg_type);
@@ -97,28 +101,27 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         }
     }
 
-    // 👇 ESTE BLOQUE DEBE VENIR ANTES DEL USO POSTERIOR DE reg_types
     let mut temp_regs: Vec<String> = vec![];
     for instr in instrs {
         if let Instruction::GetElementPtr { dst, .. } = instr {
             let dst = clean_operand(dst);
-            temp_regs.push(dst.clone()); // e.g., x_
-            temp_regs.push(format!("{}_offset", dst)); // e.g., x__offset
+            temp_regs.push(dst.clone());
+            temp_regs.push(format!("{}_offset", dst));
         }
     }
     for reg in temp_regs {
-        reg_types.entry(reg).or_insert("s32");
+        reg_types.entry(reg).or_insert(PTXType::S32);
     }
 
     let mut f32_regs = vec![];
     let mut s32_regs = vec![];
     let mut pred_regs = vec![];
 
-    for (reg, ty) in reg_types {
+    for (reg, ty) in &reg_types {
         match ty {
-            "f32" => f32_regs.push(reg),
-            "s32" => s32_regs.push(reg),
-            "pred" => pred_regs.push(reg),
+            PTXType::F32 => f32_regs.push(reg.clone()),
+            PTXType::S32 => s32_regs.push(reg.clone()),
+            PTXType::Pred => pred_regs.push(reg.clone()),
             _ => {}
         }
     }
@@ -127,20 +130,24 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
     s32_regs.sort();
     pred_regs.sort();
 
-    // Detectar variables alocadas localmente
     let mut local_vars = vec![];
     for instr in instrs {
         if let Instruction::Alloca { dst, ty, .. } = instr {
             let reg = clean_operand(dst);
-            let ty_str = if ty.contains("f32") { "f32" } else { "s32" };
-            local_vars.push((reg, ty_str));
+            let ty_enum = if ty.contains("f32") {
+                PTXType::F32
+            } else {
+                PTXType::S32
+            };
+            local_vars.push((reg, ty_enum));
         }
     }
+
     local_vars.sort();
     let mut out = vec![];
 
     for (reg, ty) in local_vars {
-        out.push(format!(".local .{} {};", ty, reg));
+        out.push(format!(".local .{} {};", ty.as_str(), reg));
     }
 
     if !f32_regs.is_empty() {
@@ -174,25 +181,8 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
         ));
     }
 
-    s32_regs.push("i".to_string());
-    s32_regs.push("sum".to_string());
-    s32_regs.push("loop".to_string());
-    s32_regs.push("body".to_string());
-    s32_regs.push("exit".to_string());
-
     out.push(String::new());
-
     out.join("\n")
-}
-
-fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
-    if a == "s32" || b == "s32" {
-        "s32"
-    } else if a == "f32" || b == "f32" {
-        "f32"
-    } else {
-        "pred"
-    }
 }
 
 fn register_type(reg_name: &str, instrs: &[&Instruction]) -> &'static str {

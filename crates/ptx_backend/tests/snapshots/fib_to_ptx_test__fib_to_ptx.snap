@@ -14,7 +14,8 @@ expression: actual
 .local .s32 a;
 .local .s32 b;
 .local .s32 i;
-.reg .s32 %0, %1, %aval, %bval, %idx, %n, %next, %out, %out_, %out__offset, %sum, %x, %y;
+.reg .f32 %aval, %bval;
+.reg .s32 %0, %1, %idx, %n, %next, %out, %out_, %out__offset, %sum, %x, %y;
 .reg .pred %cond;
 .entry fib {
     

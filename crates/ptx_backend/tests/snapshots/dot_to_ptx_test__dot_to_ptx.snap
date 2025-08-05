@@ -13,8 +13,8 @@ expression: actual
 // Block: %exit
 .local .s32 i;
 .local .s32 sum;
-.reg .f32 %acc, %prod, %xval, %yval;
-.reg .s32 %0, %1, %idx, %n, %new_sum, %next, %out, %result, %x, %x_, %x__offset, %y, %y_, %y__offset;
+.reg .f32 %acc, %new_sum, %prod, %xval, %yval;
+.reg .s32 %0, %1, %idx, %n, %next, %out, %result, %x, %x_, %x__offset, %y, %y_, %y__offset;
 .reg .pred %cond;
 .entry dot {
     

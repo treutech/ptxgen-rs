@@ -15,7 +15,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use ir_model::Instruction;
 use llvm_parser::convert::lower;
+use llvm_parser::parse_llvm_ir_from_str;
 use llvm_parser::parse_module::parse_module;
 use ptx_backend::lower_function;
 
@@ -116,4 +118,27 @@ fn validate_structural_rules() {
         check_terminal_instruction(&ptx),
         "missing ret or bra at function end"
     );
+}
+
+#[test]
+fn no_unhandled_instructions() {
+    let input = include_str!("./inputs/fib.ll");
+    let module = parse_llvm_ir_from_str(input).unwrap();
+    let mut all_instrs = vec![];
+
+    for func in &module.functions {
+        let blocks = llvm_parser::lower(func).unwrap();
+        all_instrs.extend(blocks);
+    }
+
+    let flat: Vec<_> = all_instrs
+        .iter()
+        .flat_map(|(_, instrs)| instrs.iter())
+        .collect();
+    let count = flat
+        .iter()
+        .filter(|i| matches!(i, Instruction::Unhandled { .. }))
+        .count();
+
+    assert_eq!(count, 0, "There are {count} unhandled instructions");
 }
