@@ -163,6 +163,11 @@ pub enum Instruction {
         dst: String,
         src: String,
     },
+    Call {
+        function: String,
+        target: String,
+        args: Vec<String>,
+    },
     Unhandled {
         function: String,
         text: String,
@@ -197,6 +202,7 @@ impl Instruction {
             | Instruction::Bitcast { function, .. }
             | Instruction::ZExt { function, .. }
             | Instruction::Trunc { function, .. }
+            | Instruction::Call { function, .. } 
             | Instruction::Unhandled { function, .. } => function,
         }
     }
@@ -257,6 +263,8 @@ impl Instruction {
             ZExt { dst, src, .. } => { vec![dst, src] }
             Trunc { dst, src, .. } => { vec![dst, src] }
 
+            Call { args, .. } => args.iter().map(|s| s.as_str()).collect(),
+            
             // Other
             Unhandled { text, .. } => vec![text],
             _ => vec![],

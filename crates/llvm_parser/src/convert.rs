@@ -173,6 +173,26 @@ pub fn lower(function: &str, instr: &LlvmInst) -> Instruction {
             dst: t.dest.to_string(),
             src: t.operand.to_string(),
         },
+        Call(c) => {
+            let target = match &c.function {
+                either::Either::Right(llvm_ir::Operand::ConstantOperand(const_ref)) => {
+                    match const_ref.as_ref() {
+                        llvm_ir::constant::Constant::GlobalReference { name, .. } => match name {
+                            llvm_ir::Name::Name(s) => s.to_string(),
+                            llvm_ir::Name::Number(n) => format!("{}", n),
+                        },
+                        _ => "unknown_fn".to_string(),
+                    }
+                }
+                _ => "unknown_fn".to_string(),
+            };
+
+            Instruction::Call {
+                function: function.to_string(),
+                target,
+                args: c.arguments.iter().map(|a| a.0.to_string()).collect(),
+            }
+        }
         _ => Instruction::Unhandled {
             function: function.to_string(),
             text: format!("{:?}", instr),

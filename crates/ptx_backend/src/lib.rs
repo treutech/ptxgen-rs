@@ -344,6 +344,14 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         Trunc { dst, src, .. } => {
             format!("cvt.u8.u32 {}, {};", reg(dst), reg(src))
         }
+        Call { target, args, .. } => {
+            let args_str = args
+                .iter()
+                .map(|a| reg(a))
+                .collect::<Vec<_>>()
+                .join(", ");
+            format!("call {}, ({});", clean_operand(target), args_str)
+        }
         Unhandled { text, .. } => format!("// unhandled: {}", text),
     }
 }
