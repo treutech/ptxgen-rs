@@ -354,35 +354,34 @@ use llvm_parser::parse_llvm_ir_from_str;
 
 pub fn compile_llvm_to_ptx(ir_code: &str) -> Result<String> {
     let module: Module = parse_llvm_ir_from_str(ir_code)?;
-    let mut all_instrs: Vec<(String, Vec<Instruction>)> = vec![];
+    let mut ptx_lines = vec![];
 
     for func in &module.functions {
         let blocks = llvm_parser::lower(func)?;
-        all_instrs.extend(blocks);
+        let kernel_name = &func.name;
+
+        // Count no-supported instructions per function
+        let flat_instrs: Vec<&Instruction> = blocks
+            .iter()
+            .flat_map(|(_, instrs)| instrs.iter())
+            .collect();
+
+        let unhandled_count = flat_instrs
+            .iter()
+            .filter(|i| matches!(i, Instruction::Unhandled { .. }))
+            .count();
+
+        if unhandled_count > 0 {
+            eprintln!(
+                "Warning: {unhandled_count} unhandled instruction(s) in function `{}`",
+                kernel_name
+            );
+        }
+
+        let func_lines = lower_function(kernel_name, &blocks, "sm_75");
+        ptx_lines.extend(func_lines);
+        ptx_lines.push(String::new());
     }
 
-    let kernel_name = module
-        .functions
-        .iter()
-        .next()
-        .map(|f| f.name.clone())
-        .unwrap_or_else(|| "unknown_kernel".into());
-
-    // Count unhandled instructions
-    let flat_instrs: Vec<&Instruction> = all_instrs
-        .iter()
-        .flat_map(|(_, instrs)| instrs.iter())
-        .collect();
-
-    let unhandled_count = flat_instrs
-        .iter()
-        .filter(|i| matches!(i, Instruction::Unhandled { .. }))
-        .count();
-
-    if unhandled_count > 0 {
-        eprintln!("Warning: {unhandled_count} unhandled instruction(s) in {}", kernel_name);
-    }
-
-    let ptx_lines = lower_function(&kernel_name, &all_instrs, "sm_75");
     Ok(ptx_lines.join("\n"))
 }
