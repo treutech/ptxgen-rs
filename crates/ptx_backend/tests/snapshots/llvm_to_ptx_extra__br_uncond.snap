@@ -8,7 +8,5 @@ expression: "run_test(\"br_uncond.ll\")"
 .address_size 64
 
 .entry br_uncond {
-.reg .s32 %out, %x, %y;
-
     ret;
 }

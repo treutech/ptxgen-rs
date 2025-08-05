@@ -8,9 +8,7 @@ expression: "run_test(\"phi_basic.ll\")"
 .address_size 64
 
 .entry main {
-.reg .s32 %out, %x, %y;
-
 merge:
-    // phi node %val <- [%1, a], [%2, b]
+    // phi.s32 %val <- [("a", "i32 1"), ("b", "i32 2")]
     ret;
 }

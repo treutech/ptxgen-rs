@@ -8,7 +8,5 @@ expression: "run_test(\"ret_only.ll\")"
 .address_size 64
 
 .entry ret_only {
-.reg .s32 %out, %x, %y;
-
     ret;
 }

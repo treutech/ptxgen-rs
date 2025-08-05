@@ -17,7 +17,7 @@
 
 // PTX type system for register declaration and operand mapping.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum PTXType {
     S32,
     S64,

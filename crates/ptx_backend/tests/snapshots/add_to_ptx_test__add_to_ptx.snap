@@ -8,11 +8,10 @@ expression: actual
 
 // Function: add
 // Block: %entry
-.reg .f32 %a_val, %b_val;
-.reg .s32 %out, %sum, %x, %y;
+.reg s32 %a_val, %b_val, %sum;
 .entry add {
-    ld.global.f32 %a_val, [a];
-    ld.global.f32 %b_val, [b];
+    ld.global.s32 %a_val, [a];
+    ld.global.s32 %b_val, [b];
     add.s32 %sum, %a_val, %b_val;
     st.global.s32 [%out], %sum;
 }

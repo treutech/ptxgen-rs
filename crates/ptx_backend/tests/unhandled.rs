@@ -16,7 +16,11 @@
 // limitations under the License.
 
 use ir_model::Instruction;
-use ptx_backend::{declare_registers, to_ptx};
+use ptx_backend::to_ptx;
+use ptx_backend::type_map::declare_registers_from_typemap;
+
+mod common;
+use common::build_typemap;
 
 #[test]
 fn test_unhandled_instruction_output() {
@@ -43,14 +47,17 @@ fn test_unhandled_instruction_output() {
     actual.push_str("// Block: entry\n");
 
     let instr_refs: Vec<&_> = instrs.iter().collect();
-    actual.push_str(&declare_registers(&instr_refs));
+    let type_map = build_typemap(&instr_refs);
+
+    let decls = declare_registers_from_typemap(&type_map);
+    actual.push_str(&decls.join("\n"));
+    actual.push('\n');
+
     actual.push_str(".entry test {\n");
-
     for instr in &instrs {
-        actual.push_str(&format!("    {}\n", to_ptx(instr, &instr_refs)));
+        actual.push_str(&format!("    {}\n", to_ptx(instr, &type_map)));
     }
-
-    actual.push_str("}\n");
+    actual.push_str("}\n\n");
 
     insta::assert_snapshot!("unhandled_instr", actual);
 }

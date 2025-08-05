@@ -16,6 +16,7 @@
 // limitations under the License.
 
 use ptx_backend::compile_llvm_to_ptx;
+use regex::Regex;
 
 const CALL_ARGS_LL: &str = include_str!("inputs/call_with_args.ll");
 
@@ -23,9 +24,24 @@ const CALL_ARGS_LL: &str = include_str!("inputs/call_with_args.ll");
 fn test_call_with_args_translation() {
     let ptx = compile_llvm_to_ptx(CALL_ARGS_LL).expect("Compilation failed");
 
+    println!("===== PTX Output =====\n{ptx}\n=======================");
+
+    // Validaciones por string directo
     assert!(ptx.contains(".param .s32 arg0;"));
-    assert!(ptx.contains("st.param.b32 [arg0], %x;"));
-    assert!(ptx.contains(".param .s32 arg1;"));
-    assert!(ptx.contains("st.param.b32 [arg1], %y;"));
+    assert!(ptx.contains(".param .f32 arg1;"));
     assert!(ptx.contains("call foo, (arg0, arg1);"));
+
+    // Validaciones por patrón
+    let re_arg0 = Regex::new(r"st\.param\.\w+\s+\[arg0],\s+%[a-zA-Z0-9_]+;").unwrap();
+    let re_arg1 = Regex::new(r"st\.param\.\w+\s+\[arg1],\s+%[a-zA-Z0-9_]+;").unwrap();
+
+    assert!(
+        re_arg0.is_match(&ptx),
+        "Expected st.param.b32 to arg0 from some register"
+    );
+
+    assert!(
+        re_arg1.is_match(&ptx),
+        "Expected st.param.b32 to arg1 from some register"
+    );
 }

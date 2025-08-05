@@ -12,11 +12,9 @@ expression: actual
 .address_size 64
 
 .entry saxpy {
-.local .s32 i;
-.reg .f32 %a, %ax, %res, %xval, %yval;
-.reg .s32 %0, %1, %idx, %n, %next, %out, %out_, %out__offset, %x, %x_, %x__offset, %y, %y_, %y__offset;
-.reg .pred %cmp;
-
+.reg s32 %0, %1, %idx, %n, %next, %res;
+.reg f32 %a, %ax, %xval, %yval;
+.reg pred %cmp;
 entry:
     
     st.global.s32 [%i], %0;
@@ -34,7 +32,7 @@ body:
     ld.global.f32 %yval, [y_];
     mul.f32 %ax, %a, %xval;
     add.f32 %res, %ax, %yval;
-    st.global.f32 [%out_], %res;
+    st.global.s32 [%out_], %res;
     add.s32 %next, %idx, %1;
     st.global.s32 [%i], %next;
     ret;

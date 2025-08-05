@@ -15,13 +15,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod ptx_type;
-mod utils;
+pub mod ptx_type;
+pub mod utils;
+pub mod type_map;
 
 use crate::ptx_type::PTXType;
 use crate::utils::{clean_operand, get_register_type};
 use ir_model::Instruction;
-use std::collections::HashMap;
+use crate::type_map::{TypeMap, declare_registers_from_typemap};
+
 
 pub fn lower_function(
     name: &str,
@@ -39,7 +41,18 @@ pub fn lower_function(
         .flat_map(|(_, instrs)| instrs.iter())
         .collect();
 
-    output.push(declare_registers(&flat_instrs));
+    let mut type_map = TypeMap::new();
+    for instr in &flat_instrs {
+        for operand in instr.used_operands() {
+            if let Some(ty_str) = get_register_type(instr, &operand) {
+                let ptx_ty = PTXType::from_str(ty_str);
+                type_map.insert(&clean_operand(&operand), ptx_ty);
+            }
+        }
+    }
+    for line in declare_registers_from_typemap(&type_map) {
+        output.push(line);
+    }
 
     for (block_name, instrs) in all_instrs {
         if instrs.is_empty() {
@@ -47,7 +60,7 @@ pub fn lower_function(
         }
         output.push(format!("{}:", clean_operand(block_name)));
         for instr in instrs {
-            let line = to_ptx(instr, &flat_instrs);
+            let line = to_ptx(instr, &type_map);
             output.push(format!("    {}", line));
         }
     }
@@ -76,125 +89,7 @@ fn emit_header(target: &str) -> String {
     format!(".version 7.0\n.target {}\n.address_size 64\n", target)
 }
 
-pub fn declare_registers(instrs: &[&Instruction]) -> String {
-    let mut reg_types: HashMap<String, PTXType> = HashMap::new();
-
-    for reg in ["x", "y", "out"] {
-        reg_types.entry(reg.to_string()).or_insert(PTXType::S32);
-    }
-
-    for instr in instrs {
-        for name in instr.used_operands() {
-            let reg = clean_operand(&name);
-            if let Some(reg_type_str) = get_register_type(instr, &name) {
-                let reg_type = PTXType::from_str(reg_type_str);
-                match reg_types.get(&reg) {
-                    Some(&existing_type) if existing_type != reg_type => {
-                        reg_types.insert(reg.clone(), existing_type.dominant_with(reg_type));
-                    }
-                    None => {
-                        reg_types.insert(reg.clone(), reg_type);
-                    }
-                    _ => {}
-                }
-            }
-        }
-    }
-
-    let mut temp_regs: Vec<String> = vec![];
-    for instr in instrs {
-        if let Instruction::GetElementPtr { dst, .. } = instr {
-            let dst = clean_operand(dst);
-            temp_regs.push(dst.clone());
-            temp_regs.push(format!("{}_offset", dst));
-        }
-    }
-    for reg in temp_regs {
-        reg_types.entry(reg).or_insert(PTXType::S32);
-    }
-
-    let mut f32_regs = vec![];
-    let mut s32_regs = vec![];
-    let mut pred_regs = vec![];
-
-    for (reg, ty) in &reg_types {
-        match ty {
-            PTXType::F32 => f32_regs.push(reg.clone()),
-            PTXType::S32 => s32_regs.push(reg.clone()),
-            PTXType::Pred => pred_regs.push(reg.clone()),
-            _ => {}
-        }
-    }
-
-    f32_regs.sort();
-    s32_regs.sort();
-    pred_regs.sort();
-
-    let mut local_vars = vec![];
-    for instr in instrs {
-        if let Instruction::Alloca { dst, ty, .. } = instr {
-            let reg = clean_operand(dst);
-            let ty_enum = if ty.contains("f32") {
-                PTXType::F32
-            } else {
-                PTXType::S32
-            };
-            local_vars.push((reg, ty_enum));
-        }
-    }
-
-    local_vars.sort();
-    let mut out = vec![];
-
-    for (reg, ty) in local_vars {
-        out.push(format!(".local .{} {};", ty.as_str(), reg));
-    }
-
-    if !f32_regs.is_empty() {
-        out.push(format!(
-            ".reg .f32 {};",
-            f32_regs
-                .iter()
-                .map(|r| format!("%{}", r))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    if !s32_regs.is_empty() {
-        out.push(format!(
-            ".reg .s32 {};",
-            s32_regs
-                .iter()
-                .map(|r| format!("%{}", r))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-    if !pred_regs.is_empty() {
-        out.push(format!(
-            ".reg .pred {};",
-            pred_regs
-                .iter()
-                .map(|r| format!("%{}", r))
-                .collect::<Vec<_>>()
-                .join(", ")
-        ));
-    }
-
-    out.push(String::new());
-    out.join("\n")
-}
-
-fn register_type(reg_name: &str, instrs: &[&Instruction]) -> &'static str {
-    for instr in instrs {
-        if let Some(t) = get_register_type(instr, reg_name) {
-            return t;
-        }
-    }
-    "s32" // default fallback
-}
-
-pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
+pub fn to_ptx(instr: &Instruction, type_map: &TypeMap) -> String {
     use Instruction::*;
 
     fn reg(op: &str) -> String {
@@ -212,25 +107,6 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             format!("[{}]", clean)
         } else {
             format!("[%{}]", clean)
-        }
-    }
-
-    fn is_local(name: &str, instrs: &[&Instruction]) -> bool {
-        instrs
-            .iter()
-            .any(|i| matches!(i, Alloca { dst, .. } if dst == name))
-    }
-
-    fn format_arg(arg: &str) -> String {
-        if arg.parse::<i32>().is_ok() || arg.parse::<f32>().is_ok() {
-            arg.to_string()
-        } else {
-            let clean = clean_operand(arg);
-            if clean.starts_with('%') {
-                clean
-            } else {
-                format!("%{}", clean)
-            }
         }
     }
 
@@ -322,21 +198,21 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             )
         }
         Load { dst, src, .. } => {
-            let ty = register_type(dst, all_instrs);
-            let space = if is_local(src, all_instrs) {
-                "local"
-            } else {
-                "global"
-            };
+            let ty = type_map
+                .get(&clean_operand(dst))
+                .unwrap_or(&PTXType::S32)
+                .as_str();
+
+            let space = "global";
             format!("ld.{space}.{ty} {}, [{}];", reg(dst), clean_operand(src))
         }
         Store { dst, value, .. } => {
-            let ty = register_type(value, all_instrs);
-            let space = if is_local(dst, all_instrs) {
-                "local"
-            } else {
-                "global"
-            };
+            let ty = type_map
+                .get(&clean_operand(value))
+                .unwrap_or(&PTXType::S32)
+                .as_str();
+
+            let space = "global";
             format!("st.{space}.{ty} {}, {};", mem(dst), reg(value))
         }
         Br {
@@ -374,12 +250,11 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             format!("{calc_offset}\n    {calc_ptr}")
         }
         Phi { dst, incoming, .. } => {
-            let incoming_str = incoming
-                .iter()
-                .map(|(label, val)| format!("[{}, {}]", reg(val), label))
-                .collect::<Vec<_>>()
-                .join(", ");
-            format!("// phi node {} <- {}", reg(dst), incoming_str)
+            let ty = type_map
+                .get(&clean_operand(dst))
+                .unwrap_or(&PTXType::S32)
+                .as_str();
+            format!("// phi.{ty} {} <- {:?}", reg(dst), incoming)
         }
         Alloca { .. } => String::new(),
         Select {
@@ -389,8 +264,12 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             val_false,
             ..
         } => {
+            let ty = type_map
+                .get(&clean_operand(dst))
+                .unwrap_or(&PTXType::S32)
+                .as_str();
             format!(
-                "selp.s32 {}, {}, {}, {};",
+                "selp.{ty} {}, {}, {}, {};",
                 reg(dst),
                 reg(val_true),
                 reg(val_false),
@@ -412,16 +291,31 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
             let mut ptx = String::new();
 
             if let Some(retvar) = ret {
-                ptx.push_str(&format!("\t.param .s32 retval_{};\n", retvar));
+                let ty = type_map
+                    .get(&clean_operand(retvar))
+                    .unwrap_or(&PTXType::S32)
+                    .as_str();
+                ptx.push_str(&format!("\t.param .{ty} retval_{};\n", retvar));
             }
 
             for (i, arg) in args.iter().enumerate() {
-                ptx.push_str(&format!("\t.param .s32 arg{i};\n"));
                 let arg_val = extract_arg_name(arg);
-                ptx.push_str(&format!(
-                    "\tst.param.b32 [arg{i}], {};\n",
-                    format_arg(&arg_val)
-                ));
+                let ty = type_map
+                    .get(&clean_operand(&arg_val))
+                    .unwrap_or(&PTXType::S32)
+                    .as_str();
+                ptx.push_str(&format!("\t.param .{ty} arg{i};\n"));
+            }
+
+            for (i, arg) in args.iter().enumerate() {
+                let arg_val = extract_arg_name(arg);
+                let reg_name = reg(&arg_val);
+                let ty = type_map
+                    .get(&clean_operand(&arg_val))
+                    .unwrap_or(&PTXType::S32)
+                    .as_str();
+
+                ptx.push_str(&format!("\tst.param.{ty} [arg{i}], {reg_name};\n"));
             }
 
             let arg_params = (0..args.len())
@@ -435,8 +329,12 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
                     clean_operand(callee),
                     arg_params
                 ));
+                let ty = type_map
+                    .get(&clean_operand(retvar))
+                    .unwrap_or(&PTXType::S32)
+                    .as_str();
                 ptx.push_str(&format!(
-                    "\tld.param.s32 {}, [retval_{}];\n",
+                    "\tld.param.{ty} {}, [retval_{}];\n",
                     reg(retvar),
                     retvar
                 ));

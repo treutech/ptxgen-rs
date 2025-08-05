@@ -16,7 +16,11 @@
 // limitations under the License.
 
 use llvm_parser::parse_module::parse_module;
-use ptx_backend::{declare_registers, to_ptx};
+use ptx_backend::{to_ptx};
+use ptx_backend::type_map::declare_registers_from_typemap;
+
+mod common;
+use common::build_typemap;
 
 #[test]
 fn test_fib_to_ptx() {
@@ -29,7 +33,7 @@ fn test_fib_to_ptx() {
 
     let mut actual = String::new();
 
-    // Emit global header once
+    // Emit global header
     actual.push_str(".version 7.0\n");
     actual.push_str(".target sm_75\n");
     actual.push_str(".address_size 64\n\n");
@@ -50,13 +54,16 @@ fn test_fib_to_ptx() {
         }
 
         let instr_refs: Vec<&_> = instrs.iter().collect();
-        actual.push_str(&declare_registers(&instr_refs));
+        let type_map = build_typemap(&instr_refs);
+
+        let decls = declare_registers_from_typemap(&type_map);
+        actual.push_str(&decls.join("\n"));
+        actual.push('\n');
+
         actual.push_str(&format!(".entry {} {{\n", func.name));
-
         for instr in &instrs {
-            actual.push_str(&format!("    {}\n", to_ptx(instr, &instr_refs)));
+            actual.push_str(&format!("    {}\n", to_ptx(instr, &type_map)));
         }
-
         actual.push_str("}\n\n");
     }
 

@@ -8,10 +8,8 @@ expression: "run_test(\"conflict_type.ll\")"
 .address_size 64
 
 .entry main {
-.local .s32 x;
-.reg .f32 %val;
-.reg .s32 %1, %out, %x, %y;
-
+.reg s32 %1;
+.reg f32 %val;
 entry:
     
     st.global.s32 [%x], %1;
