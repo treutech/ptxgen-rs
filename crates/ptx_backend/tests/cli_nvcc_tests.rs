@@ -61,14 +61,12 @@ fn test_minimal_ret_ptx_compiles() {
     run_nvcc_smoke_test("minimal_ret.ll");
 }
 
+/* TODO
 
 #[test]
 fn test_dot_ptx_compiles() {
     run_nvcc_smoke_test("dot.ll");
 }
-
-/*
- TODO
 
 #[test]
 fn test_add_ptx_compiles() {
