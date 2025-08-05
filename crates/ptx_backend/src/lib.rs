@@ -187,10 +187,12 @@ pub fn declare_registers(instrs: &[&Instruction]) -> String {
 }
 
 fn dominant_type<'a>(a: &'a str, b: &'a str) -> &'a str {
-    match (a, b) {
-        ("s32", _) | (_, "s32") => "s32",
-        ("f32", _) | (_, "f32") => "f32",
-        _ => "pred",
+    if a == "s32" || b == "s32" {
+        "s32"
+    } else if a == "f32" || b == "f32" {
+        "f32"
+    } else {
+        "pred"
     }
 }
 

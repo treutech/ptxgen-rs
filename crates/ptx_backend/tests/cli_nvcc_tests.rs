@@ -40,7 +40,7 @@ fn run_nvcc_smoke_test(name: &str) {
     assert!(fs::metadata("out.ptx").is_ok(), "Missing out.ptx");
 
     let status = Command::new("nvcc")
-        .args(["-cubin", "out.ptx", "-o", "out.cubin"])
+        .args(["-arch=sm_75", "-cubin", "out.ptx", "-o", "out.cubin"])
         .status()
         .expect("Failed to run nvcc");
 
@@ -51,25 +51,28 @@ fn run_nvcc_smoke_test(name: &str) {
     );
 
     assert!(
-        fs::metadata("out.o").map(|m| m.len()).unwrap_or(0) > 0,
-        "Output file out.o is empty or missing"
+        fs::metadata("out.cubin").map(|m| m.len()).unwrap_or(0) > 0,
+        "Output file out.cubin is empty or missing"
     );
 }
 
-/* TODO
 #[test]
-fn test_add_ptx_compiles() {
-    run_nvcc_smoke_test("add.ll");
+fn test_minimal_ret_ptx_compiles() {
+    run_nvcc_smoke_test("minimal_ret.ll");
 }
+
 
 #[test]
 fn test_dot_ptx_compiles() {
     run_nvcc_smoke_test("dot.ll");
 }
 
+/*
+ TODO
+
 #[test]
-fn test_saxpy_ptx_compiles() {
-    run_nvcc_smoke_test("saxpy.ll");
+fn test_add_ptx_compiles() {
+    run_nvcc_smoke_test("add.ll");
 }
 
 #[test]
@@ -77,4 +80,8 @@ fn test_phi_ptx_generates() {
     run_nvcc_smoke_test("phi.ll");
 }
 
+#[test]
+fn test_saxpy_ptx_compiles() {
+    run_nvcc_smoke_test("saxpy.ll");
+}
 */
