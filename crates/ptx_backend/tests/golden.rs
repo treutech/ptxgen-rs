@@ -41,14 +41,35 @@ fn check_golden(test_name: &str) {
 }
 
 #[test]
+fn golden_ret_only() {
+    check_golden("ret_only");
+}
+
+#[test]
 fn golden_add() {
     check_golden("add");
 }
 
 #[test]
-fn golden_ret_only() {
-    check_golden("ret_only");
+fn golden_sub() {
+    check_golden("sub");
 }
+
+#[test]
+fn golden_mul() {
+    check_golden("mul");
+}
+
+#[test]
+fn golden_div() {
+    check_golden("div");
+}
+
+#[test]
+fn golden_rem() {
+    check_golden("rem");
+}
+
 
 #[test]
 fn golden_phi() {

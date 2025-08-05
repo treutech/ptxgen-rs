@@ -242,6 +242,33 @@ pub fn to_ptx(instr: &Instruction, all_instrs: &[&Instruction]) -> String {
         Add { dst, lhs, rhs, .. } => {
             format!("add.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }
+        Sub { dst, lhs, rhs, .. } => {
+            format!("sub.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        FSub { dst, lhs, rhs, .. } => {
+            format!("sub.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        Mul { dst, lhs, rhs, .. } => {
+            format!("mul.lo.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        UDiv { dst, lhs, rhs, .. } => {
+            format!("div.u32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        SDiv { dst, lhs, rhs, .. } => {
+            format!("div.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        URem { dst, lhs, rhs, .. } => {
+            format!("rem.u32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        SRem { dst, lhs, rhs, .. } => {
+            format!("rem.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        FDiv { dst, lhs, rhs, .. } => {
+            format!("div.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
+        FRem { dst, lhs, rhs, .. } => {
+            format!("rem.f32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
+        }
         ICmp { dst, lhs, rhs, .. } => {
             format!("setp.lt.s32 {}, {}, {};", reg(dst), reg(lhs), reg(rhs))
         }

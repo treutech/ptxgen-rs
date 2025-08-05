@@ -80,6 +80,60 @@ pub enum Instruction {
     Ret {
         function: String,
     },
+    Sub {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    FSub {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    Mul {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    UDiv {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    SDiv {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    URem {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    SRem {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    FDiv {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
+    FRem {
+        function: String,
+        dst: String,
+        lhs: String,
+        rhs: String,
+    },
     Unhandled {
         function: String,
         text: String,
@@ -99,27 +153,53 @@ impl Instruction {
             | Instruction::GetElementPtr { function, .. }
             | Instruction::Alloca { function, .. }
             | Instruction::Br { function, .. }
-            | Instruction::Ret { function }
+            | Instruction::Ret { function, .. }
+            | Instruction::Sub { function, .. }
+            | Instruction::FSub { function, .. }
+            | Instruction::Mul { function, .. }
+            | Instruction::UDiv { function, .. }
+            | Instruction::SDiv { function, .. }
+            | Instruction::URem { function, .. }
+            | Instruction::SRem { function, .. }
+            | Instruction::FDiv { function, .. }
+            | Instruction::FRem { function, .. }
             | Instruction::Unhandled { function, .. } => function,
         }
     }
 
     pub fn used_operands(&self) -> Vec<&str> {
         use Instruction::*;
+
         match self {
-            FMul { dst, lhs, rhs, .. }
+            
+            // Arithmetic 3 operands
+            Add { dst, lhs, rhs, .. }
+            | Sub { dst, lhs, rhs, .. }
+            | Mul { dst, lhs, rhs, .. }
+            | UDiv { dst, lhs, rhs, .. }
+            | SDiv { dst, lhs, rhs, .. }
+            | URem { dst, lhs, rhs, .. }
+            | SRem { dst, lhs, rhs, .. }
             | FAdd { dst, lhs, rhs, .. }
-            | Add { dst, lhs, rhs, .. }
+            | FSub { dst, lhs, rhs, .. }
+            | FMul { dst, lhs, rhs, .. }
+            | FDiv { dst, lhs, rhs, .. }
+            | FRem { dst, lhs, rhs, .. }
             | ICmp { dst, lhs, rhs, .. } => vec![dst, lhs, rhs],
 
+            // Load/Store
             Load { dst, src, .. } => vec![dst, src],
             Store { dst, value, .. } => vec![dst, value],
 
+            // Alloca
             Alloca { dst, .. } => vec![dst],
+
+            // GEP
             GetElementPtr {
                 dst, base, index, ..
             } => vec![dst, base, index],
 
+            // Phi
             Phi { dst, incoming, .. } => {
                 let mut v = vec![dst.as_str()];
                 for (label, val) in incoming {
@@ -129,6 +209,7 @@ impl Instruction {
                 v
             }
 
+            // Other
             Unhandled { text, .. } => vec![text],
             _ => vec![],
         }
